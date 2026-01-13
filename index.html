@@ -3,65 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معرض ال.جي -  1</title>
+    <title>معرض ال.جي - النسخة المعتمدة</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        @import url('https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv');
-        body { font-family: 'Cairo', sans-serif; background: #f1f5f9; margin: 0; color: #1e293b; font-size: 0.8rem; }
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+        body { font-family: 'Cairo', sans-serif; background: #f8fafc; margin: 0; color: #1e293b; font-size: 0.8rem; overflow-x: hidden; }
         
-        /* نافذة الانتظار */
         #loader { 
-            position: fixed; inset: 0; background: rgba(255, 255, 255, 0.95); 
+            position: fixed; inset: 0; background: white; 
             z-index: 9999; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; 
         }
-        
-        .table-container { max-height: 72vh; overflow-y: auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+
+        .table-container { max-height: 75vh; overflow-y: auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         table { width: 100%; border-collapse: separate; border-spacing: 0; }
         thead th { position: sticky; top: 0; z-index: 20; background-color: #2563eb; color: white; padding: 12px 8px; font-weight: 700; border-bottom: 2px solid #1d4ed8; }
         td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
-        .search-wrapper { position: relative; width: 100%; }
-        .input-glass { background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; font-size: 0.8rem; width: 100%; font-weight: 600; outline: none; }
-        .input-glass:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
         
-        .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 180px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .search-wrapper { position: relative; width: 100%; }
+        .input-glass { background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; font-size: 0.8rem; width: 100%; font-weight: 600; outline: none; transition: 0.2s; }
+        .input-glass:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        
+        .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; max-height: 180px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
         .suggestion-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f8fafc; text-align: right; color: #334155; }
         .suggestion-item:hover, .suggestion-item.active { background: #eff6ff; color: #2563eb; font-weight: 700; }
-        header { padding: 1.5rem 1rem !important; background: linear-gradient(to right, #2563eb, #3b82f6); }
+        
+        header { padding: 1.5rem 1rem !important; background: #2563eb; color: white; }
     </style>
 </head>
 <body>
 
     <div id="loader">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-4"></div>
-        <p class="font-bold text-blue-600 text-lg">جاري جلب البيانات من السيرفر...</p>
+        <p class="font-bold text-blue-600">جاري تحميل البيانات من الرابط الجديد...</p>
     </div>
 
-    <header class="text-white shadow-xl mb-4 sticky top-0 z-30">
+    <header class="shadow-xl mb-4 sticky top-0 z-30">
         <div class="container mx-auto">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-black">معرض ال.جي</h1>
                 <div class="flex items-center gap-4">
-                    <button onclick="window.print()" class="bg-white text-blue-600 px-5 py-2 rounded-lg text-xs font-bold hover:bg-blue-50 transition shadow-md">طباعة التقرير</button>
+                    <button onclick="window.print()" class="bg-white text-blue-600 px-5 py-2 rounded-lg text-xs font-bold shadow-md">طباعة</button>
                     <div class="flex items-center gap-2 bg-blue-800/40 p-2 rounded-lg border border-white/20">
-                        <span class="text-xs font-bold">سعر الصرف:</span>
+                        <span class="text-xs font-bold">الصرف:</span>
                         <input type="number" id="exchangeRate" value="12000" class="bg-transparent border-none text-white text-center font-black text-sm focus:ring-0 w-20">
                     </div>
                 </div>
             </div>
             <div class="grid grid-cols-4 gap-4">
-                <div class="search-wrapper"><input type="text" id="searchCat" placeholder="البحث بالتصنيف..." class="input-glass" autocomplete="off"><div id="suggestCat" class="suggestions-list"></div></div>
-                <div class="search-wrapper"><input type="text" id="searchSupplier" placeholder="البحث بالمورد..." class="input-glass" autocomplete="off"><div id="suggestSupplier" class="suggestions-list"></div></div>
-                <div class="search-wrapper"><input type="text" id="searchName" placeholder="البحث بالصنف..." class="input-glass" autocomplete="off"><div id="suggestName" class="suggestions-list"></div></div>
-                <div class="search-wrapper"><input type="text" id="searchQty" placeholder="البحث بالكمية..." class="input-glass" autocomplete="off"><div id="suggestQty" class="suggestions-list"></div></div>
+                <div class="search-wrapper"><input type="text" id="searchCat" placeholder="التصنيف..." class="input-glass" autocomplete="off"><div id="suggestCat" class="suggestions-list"></div></div>
+                <div class="search-wrapper"><input type="text" id="searchSupplier" placeholder="المورد..." class="input-glass" autocomplete="off"><div id="suggestSupplier" class="suggestions-list"></div></div>
+                <div class="search-wrapper"><input type="text" id="searchName" placeholder="الصنف..." class="input-glass" autocomplete="off"><div id="suggestName" class="suggestions-list"></div></div>
+                <div class="search-wrapper"><input type="text" id="searchQty" placeholder="الكمية..." class="input-glass" autocomplete="off"><div id="suggestQty" class="suggestions-list"></div></div>
             </div>
         </div>
     </header>
 
     <main class="container mx-auto px-4">
         <div class="table-container">
-            <table id="mainTable">
+            <table>
                 <thead>
                     <tr><th>#</th><th>التصنيف</th><th>المورد</th><th class="text-right">اسم الصنف</th><th>الكمية</th><th>شراء</th><th>حسم</th><th>صافي</th><th>البيع($)</th><th>سوري</th></tr>
                 </thead>
@@ -71,15 +72,15 @@
     </main>
 
     <script>
-        // تم استخدام الرابط المباشر لضمان عدم حدوث أخطاء في الجلب
+        // الرابط الجديد الذي زودتني به
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv';
         let allData = [];
         let searchTimeout;
 
         async function fetchData() {
-            const loader = document.getElementById('loader');
             try {
-                const response = await fetch(CSV_URL);
+                // إضافة t=Date.now لمنع التخزين المؤقت القديم (Cache)
+                const response = await fetch(CSV_URL + '&t=' + Date.now());
                 if (!response.ok) throw new Error();
                 const csvText = await response.text();
                 
@@ -87,17 +88,14 @@
                     header: true,
                     skipEmptyLines: true,
                     complete: (results) => {
-                        // فلترة البيانات للتأكد من وجود اسم صنف صالح
+                        // تنظيف البيانات من الأسطر الفارغة تماماً
                         allData = results.data.filter(r => r['الصنف'] && r['الصنف'].trim() !== '');
-                        render();
-                        loader.style.display = 'none'; // إخفاء نافذة الانتظار عند النجاح
+                        renderTable();
+                        document.getElementById('loader').style.display = 'none';
                     }
                 });
             } catch (error) {
-                console.error("Fetch Error:", error);
-                // محاولة أخرى في حال الفشل
-                setTimeout(fetchData, 2000); 
-                document.querySelector('#loader p').innerHTML = "فشل الاتصال.. جاري المحاولة مرة أخرى";
+                document.querySelector('#loader p').innerHTML = "خطأ في الاتصال.. تأكد أن الرابط منشور كـ CSV";
                 document.querySelector('#loader p').style.color = "red";
             }
         }
@@ -112,23 +110,23 @@
                 const val = input.value.trim().toLowerCase();
                 
                 searchTimeout = setTimeout(() => {
-                    render();
+                    renderTable();
                     if(!val) { list.style.display = 'none'; return; }
 
                     const unique = [...new Set(allData.map(r => String(r[key]||'')))]
-                        .filter(v => v.toLowerCase().includes(val)).slice(0, 15);
+                        .filter(v => v.toLowerCase().includes(val)).slice(0, 10);
 
                     list.innerHTML = '';
                     unique.forEach((v) => {
                         const item = document.createElement('div');
                         item.className = 'suggestion-item';
                         item.textContent = v;
-                        item.onclick = () => { input.value = v; list.style.display = 'none'; render(); };
+                        item.onclick = () => { input.value = v; list.style.display = 'none'; renderTable(); };
                         list.appendChild(item);
                     });
                     list.style.display = unique.length ? 'block' : 'none';
                     focusIndex = -1;
-                }, 200);
+                }, 150);
             });
 
             input.addEventListener("keydown", (e) => {
@@ -136,9 +134,11 @@
                 if (e.key === "ArrowDown") {
                     focusIndex = (focusIndex + 1) % items.length;
                     updateFocus(items);
+                    e.preventDefault();
                 } else if (e.key === "ArrowUp") {
                     focusIndex = (focusIndex - 1 + items.length) % items.length;
                     updateFocus(items);
+                    e.preventDefault();
                 } else if (e.key === "Enter" && focusIndex > -1) {
                     items[focusIndex].click();
                 }
@@ -150,7 +150,7 @@
             }
         }
 
-        function render() {
+        function renderTable() {
             const tbody = document.getElementById('tableBody');
             const rate = parseFloat(document.getElementById('exchangeRate').value) || 1;
             const filters = {
@@ -160,22 +160,22 @@
                 qty: document.getElementById('searchQty').value.toLowerCase()
             };
 
-            const filteredRows = allData.filter(r => 
+            const filtered = allData.filter(r => 
                 String(r['التصنيف']||'').toLowerCase().includes(filters.cat) &&
                 String(r['المورد']||'').toLowerCase().includes(filters.supp) &&
                 String(r['الصنف']||'').toLowerCase().includes(filters.name) &&
                 String(r['الكمية']||'').toLowerCase().includes(filters.qty)
             );
 
-            let htmlContent = '';
-            filteredRows.forEach((r, i) => {
+            let rowsHtml = '';
+            filtered.forEach((r, i) => {
                 const buy = parseFloat(String(r['شراء']).replace(/[^\d.]/g, '')) || 0;
                 const disc = parseFloat(String(r['الحسم']).replace(/[^\d.]/g, '')) || 0;
                 const final = buy - (buy * disc / 100);
                 const plus = final * 1.15;
                 const syp = plus * rate;
 
-                htmlContent += `<tr>
+                rowsHtml += `<tr>
                     <td class="text-gray-400">${i+1}</td>
                     <td><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold text-[10px]">${r['التصنيف']||''}</span></td>
                     <td class="text-gray-500">${r['المورد']||''}</td>
@@ -183,12 +183,12 @@
                     <td class="font-bold">${r['الكمية']||''}</td>
                     <td>${buy.toFixed(2)}</td>
                     <td class="text-red-500 font-bold">${disc}%</td>
-                    <td class="font-medium">${final.toFixed(2)}</td>
+                    <td>${final.toFixed(2)}</td>
                     <td class="bg-orange-50 font-black text-orange-700">${plus.toFixed(2)}</td>
                     <td class="bg-green-50 text-green-700 font-black">${Math.round(syp).toLocaleString()}</td>
                 </tr>`;
             });
-            tbody.innerHTML = htmlContent;
+            tbody.innerHTML = rowsHtml;
         }
 
         window.onload = () => {
@@ -197,7 +197,7 @@
             setupAutocomplete('searchSupplier', 'suggestSupplier', 'المورد');
             setupAutocomplete('searchName', 'suggestName', 'الصنف');
             setupAutocomplete('searchQty', 'suggestQty', 'الكمية');
-            document.getElementById('exchangeRate').oninput = render;
+            document.getElementById('exchangeRate').oninput = renderTable;
             document.addEventListener("click", (e) => {
                 if(!e.target.closest('.search-wrapper')) {
                     document.querySelectorAll('.suggestions-list').forEach(l => l.style.display='none');
@@ -207,4 +207,3 @@
     </script>
 </body>
 </html>
-
