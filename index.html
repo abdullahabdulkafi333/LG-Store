@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>معرض ال.جي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+        body { font-family: 'Cairo', sans-serif; background: #f8fafc; margin: 0; color: #334155; font-size: 0.8rem; }
+        .table-container { max-height: 78vh; overflow-y: auto; background: white; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        thead th { position: sticky; top: 0; z-index: 20; background-color: #3b82f6; color: white; padding: 12px 8px; font-weight: 700; font-size: 0.85rem; }
+        td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+        .search-wrapper { position: relative; width: 100%; }
+        .input-glass { background: rgba(255, 255, 255, 0.95); border: 1px solid #cbd5e1; color: #1e293b !important; border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; width: 100%; font-weight: 600; }
+        .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); color: #000 !important; }
+        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600; color: #000 !important; }
+        .suggestion-item:hover, .suggestion-item.active { background: #3b82f6; color: white !important; }
+        header { padding: 1.2rem 1rem !important; }
+        @media print { 
+            header, .no-print, #loader, #printOptions, .suggestions-list { display: none !important; }
+            .table-container { max-height: none !important; overflow: visible !important; border: none !important; box-shadow: none !important; }
+            table { width: 100%; border-collapse: collapse; }
+            th { position: static !important; background-color: #eee !important; color: black !important; border: 1px solid #000 !important; }
+            td { border: 1px solid #000 !important; color: black !important; }
+        }
+        #printOptions { display: none; position: absolute; top: 80px; left: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 150; border: 1px solid #cbd5e1; }
+    </style>
+</head>
+<body>
+    <div id="loader" class="fixed inset-0 bg-white/90 z-[200] flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
+    </div>
+    <header class="bg-blue-600 text-white shadow-lg mb-4 sticky top-0 z-30 no-print">
+        <div class="container mx-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl font-bold">معرض ال.جي</h1>
+                <div class="flex items-center gap-3">
+                    <button onclick="togglePrintOptions()" class="bg-blue-500 hover:bg-blue-400 px-3 py-1.5 rounded text-xs font-bold border border-blue-400">خيارات الطباعة</button>
+                    <button onclick="preparePrint()" class="bg-green-600 hover:bg-green-500 px-4 py-1.5 rounded text-xs font-bold border border-green-500">طباعة</button>
+                    <div class="flex items-center gap-2 bg-blue-700/40 p-2 rounded-lg border border-blue-400/30">
+                        <span class="text-xs">الصرف:</span>
+                        <input type="number" id="exchangeRate" value="12000" class="bg-transparent border-none text-white text-center font-bold text-sm focus:ring-0" style="width: 4.5rem;">
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-4 gap-3 pb-2">
+                <div class="search-wrapper">
+                    <input type="text" id="searchCat" placeholder="التصنيف" class="input-glass search-input" autocomplete="off">
+                    <div id="suggestCat" class="suggestions-list"></div>
+                </div>
+                <div class="search-wrapper">
+                    <input type="text" id="searchSupplier" placeholder="المورد" class="input-glass search-input" autocomplete="off">
+                    <div id="suggestSupplier" class="suggestions-list"></div>
+                </div>
+                <div class="search-wrapper">
+                    <input type="text" id="searchName" placeholder="الصنف" class="input-glass search-input" autocomplete="off">
+                    <div id="suggestName" class="suggestions-list"></div>
+                </div>
+                <div class="search-wrapper">
+                    <input type="text" id="searchQty" placeholder="الكمية" class="input-glass search-input" autocomplete="off">
+                    <div id="suggestQty" class="suggestions-list"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div id="printOptions" class="no-print">
+        <p class="font-bold text-xs mb-2">أعمدة الطباعة:</p>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs" id="columnCheckboxes"></div>
+        <button onclick="togglePrintOptions()" class="mt-4 w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ</button>
+    </div>
+    <main class="container mx-auto px-4">
+        <div class="table-container">
+            <table id="mainTable">
+                <thead>
+                    <tr>
+                        <th data-col="index" class="w-12">#</th>
+                        <th data-col="cat">التصنيف</th>
+                        <th data-col="supp">المورد</th>
+                        <th data-col="item">الصنف</th>
+                        <th data-col="qty">الكمية</th>
+                        <th data-col="buy">شراء</th>
+                        <th data-col="disc">حسم</th>
+                        <th data-col="final">صافي</th>
+                        <th data-col="plus">البيع($)</th>
+                        <th data-col="syp">سوري</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </main>
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv';
+        let allData = [];
+        let currentFocus = -1;
+
+        async function fetchData() {
+            try {
+                const response = await fetch(CSV_URL + '&t=' + Date.now());
+                const csvText = await response.text();
+                Papa.parse(csvText.split('\n').slice(1).join('\n'), {
+                    header: true, skipEmptyLines: true,
+                    complete: (res) => {
+                        allData = res.data;
+                        if (allData.length > 0) allData.pop();
+                        render();
+                        document.getElementById('loader').classList.add('hidden');
+                    }
+                });
+            } catch (e) { console.error("Error fetching data:", e); }
+        }
+
+        function setupAutocomplete(inputId, suggestId, key) {
+            const input = document.getElementById(inputId);
+            const list = document.getElementById(suggestId);
+
+            input.addEventListener("input", function() {
+                const val = this.value.toLowerCase();
+                currentFocus = -1;
+                const uniqueValues = [...new Set(allData.map(row => String(row[key] || '')))]
+                    .filter(v => v.toLowerCase().includes(val))
+                    .sort();
+
+                list.innerHTML = '';
+                if (!val && !input.matches(':focus')) { list.style.display = 'none'; return; }
+
+                uniqueValues.forEach((v) => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.textContent = v;
+                    div.addEventListener("click", () => {
+                        input.value = v;
+                        list.style.display = 'none';
+                        render();
+                    });
+                    list.appendChild(div);
+                });
+                list.style.display = uniqueValues.length ? 'block' : 'none';
+                render();
+            });
+
+            input.addEventListener("keydown", function(e) {
+                let x = list.getElementsByClassName("suggestion-item");
+                if (e.keyCode == 40) { // Down
+                    currentFocus++;
+                    addActive(x);
+                } else if (e.keyCode == 38) { // Up
+                    currentFocus--;
+                    addActive(x);
+                } else if (e.keyCode == 13) { // Enter
+                    e.preventDefault();
+                    if (currentFocus > -1 && x.length > 0) x[currentFocus].click();
+                }
+            });
+
+            input.addEventListener("focus", function() {
+                if (allData.length) {
+                    const event = new Event('input');
+                    input.dispatchEvent(event);
+                }
+            });
+        }
+
+        function addActive(x) {
+            if (!x || x.length === 0) return false;
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            x[currentFocus].classList.add("active");
+            x[currentFocus].scrollIntoView({ block: 'nearest' });
+        }
+
+        function removeActive(x) {
+            for (let i = 0; i < x.length; i++) x[i].classList.remove("active");
+        }
+
+        document.addEventListener("click", e => {
+            if (!e.target.classList.contains('search-input')) {
+                document.querySelectorAll('.suggestions-list').forEach(l => l.style.display = 'none');
+            }
+        });
+
+        function render() {
+            const tbody = document.getElementById('tableBody');
+            const rate = parseFloat(document.getElementById('exchangeRate').value) || 1;
+            const f = {
+                cat: document.getElementById('searchCat').value.toLowerCase(),
+                supp: document.getElementById('searchSupplier').value.toLowerCase(),
+                name: document.getElementById('searchName').value.toLowerCase(),
+                qty: document.getElementById('searchQty').value.toLowerCase()
+            };
+            tbody.innerHTML = '';
+            allData.filter(row => 
+                String(row['التصنيف']||'').toLowerCase().includes(f.cat) &&
+                String(row['المورد']||'').toLowerCase().includes(f.supp) &&
+                String(row['الصنف']||'').toLowerCase().includes(f.name) &&
+                String(row['الكمية']||'').toLowerCase().includes(f.qty)
+            ).forEach((row, i) => {
+                const buy = parseFloat(String(row['شراء']).replace(/[^\d.]/g, '')) || 0;
+                const disc = parseFloat(String(row['الحسم']).replace(/[^\d.]/g, '')) || 0;
+                const final = buy - (buy * disc / 100);
+                const plus = final * 1.15;
+                const syp = plus * rate;
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="text-gray-400 text-[10px]">${i + 1}</td>
+                        <td><span class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[11px] font-bold">${row['التصنيف'] || ''}</span></td>
+                        <td class="text-[11px] text-gray-500">${row['المورد'] || ''}</td>
+                        <td class="text-right font-bold text-gray-800">${row['الصنف'] || ''}</td>
+                        <td class="font-bold">${row['الكمية'] || ''}</td>
+                        <td>${buy.toFixed(2)}</td>
+                        <td class="text-red-500">${disc}%</td>
+                        <td>${final.toFixed(2)}</td>
+                        <td class="bg-orange-50 font-bold">${plus.toFixed(2)}</td>
+                        <td class="bg-green-50 text-green-700 font-bold">${Math.round(syp).toLocaleString()}</td>
+                    </tr>`;
+            });
+        }
+
+        function initPrintOptions() {
+            const container = document.getElementById('columnCheckboxes');
+            const cols = [{id:'index',l:'#'},{id:'cat',l:'التصنيف'},{id:'supp',l:'المورد'},{id:'item',l:'الصنف'},{id:'qty',l:'الكمية'},{id:'buy',l:'شراء'},{id:'disc',l:'حسم'},{id:'final',l:'صافي'},{id:'plus',l:'البيع'},{id:'syp',l:'سوري'}];
+            container.innerHTML = '';
+            cols.forEach(c => {
+                container.innerHTML += `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked data-col-ref="${c.id}"> ${c.l}</label>`;
+            });
+        }
+
+        function togglePrintOptions() {
+            const div = document.getElementById('printOptions');
+            div.style.display = (div.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function preparePrint() {
+            const checks = document.querySelectorAll('#columnCheckboxes input');
+            document.querySelectorAll('th, td').forEach(el => el.classList.remove('print-hidden'));
+            checks.forEach(check => {
+                if (!check.checked) {
+                    const colId = check.getAttribute('data-col-ref');
+                    const th = document.querySelector(`th[data-col="${colId}"]`);
+                    if(th) {
+                        const idx = Array.from(th.parentNode.children).indexOf(th) + 1;
+                        th.classList.add('print-hidden');
+                        document.querySelectorAll(`#tableBody tr td:nth-child(${idx})`).forEach(td => td.classList.add('print-hidden'));
+                    }
+                }
+            });
+            window.print();
+        }
+
+        document.getElementById('exchangeRate').addEventListener('input', render);
+        window.onload = () => { 
+            initPrintOptions(); 
+            fetchData();
+            setupAutocomplete('searchCat', 'suggestCat', 'التصنيف');
+            setupAutocomplete('searchSupplier', 'suggestSupplier', 'المورد');
+            setupAutocomplete('searchName', 'suggestName', 'الصنف');
+            setupAutocomplete('searchQty', 'suggestQty', 'الكمية');
+        };
+    </script>
+</body>
+</html>
