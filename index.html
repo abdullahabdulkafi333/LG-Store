@@ -3,27 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معرض الجي</title>
+    <title>معرض ال.جي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
         
-        :root {
-            --header-bg: #3b82f6;
-            --header-bg-dark: #2563eb;
-        }
-
         body { 
             font-family: 'Cairo', sans-serif; 
             background: #f8fafc; 
             margin: 0; 
             color: #334155;
+            font-size: 0.8rem; 
         }
 
         .table-container { 
-            max-height: 70vh; 
+            max-height: 78vh; 
             overflow-y: auto; 
             background: white; 
             border-radius: 12px; 
@@ -31,110 +27,145 @@
             border: 1px solid #e2e8f0;
         }
 
-        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
 
         thead th { 
             position: sticky; top: 0; z-index: 20; 
-            background-color: var(--header-bg); color: white; 
-            padding: 16px 12px; font-weight: 700;
+            background-color: #3b82f6; color: white; 
+            padding: 12px 8px; font-weight: 700;
+            font-size: 0.85rem;
         }
 
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+        td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+
+        .search-wrapper { position: relative; width: 100%; }
 
         .input-glass {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            border-radius: 8px;
-            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #cbd5e1;
+            color: #1e293b !important;
+            border-radius: 6px;
+            padding: 6px 10px;
             font-size: 0.8rem;
             width: 100%;
+            font-weight: 600;
         }
-        .input-glass::placeholder { color: rgba(255, 255, 255, 0.7); }
 
-        /* ستايل قائمة الاقتراحات */
+        /* تعديل لون الخط في القائمة المنسدلة إلى الأسود */
         .suggestions-list {
             position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
+            top: 100%; left: 0; right: 0;
             background: white;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 50;
-            max-height: 200px;
+            border-radius: 0 0 6px 6px;
+            max-height: 150px;
             overflow-y: auto;
-            color: #334155;
+            z-index: 50;
             display: none;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            color: #000000 !important; /* لون الخط أسود */
         }
+
         .suggestion-item {
-            padding: 8px 12px;
+            padding: 8px 10px;
             cursor: pointer;
             border-bottom: 1px solid #f1f5f9;
+            font-size: 0.75rem;
+            color: #000000 !important; /* تأكيد اللون الأسود للعناصر */
+            text-align: right;
         }
-        .suggestion-item:hover, .suggestion-item.active {
-            background-color: #eff6ff;
-            color: #2563eb;
+
+        .suggestion-item:hover { background: #eff6ff; color: #2563eb !important; }
+
+        .suggestion-item.active {
+            background: #3b82f6 !important;
+            color: white !important;
+        }
+
+        header { padding: 1.2rem 1rem !important; }
+
+        @media print {
+            @page { size: A4; margin: 1cm; }
+            header, .no-print, #loader, #printOptions, .suggestions-list { display: none !important; }
+            .table-container { max-height: none !important; overflow: visible !important; border: none !important; box-shadow: none !important; }
+            table { width: 100%; border-collapse: collapse; }
+            th { position: static !important; background-color: #eee !important; color: black !important; border: 1px solid #000 !important; }
+            td { border: 1px solid #000 !important; color: black !important; }
+            .print-hidden { display: none !important; }
+        }
+
+        #printOptions {
+            display: none;
+            position: absolute;
+            top: 80px; left: 20px;
+            background: white; padding: 15px;
+            border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 100; border: 1px solid #cbd5e1;
         }
     </style>
 </head>
 <body>
 
-    <div id="loader" class="loading-overlay hidden fixed inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center">
-        <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600"></div>
+    <div id="loader" class="fixed inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
     </div>
 
-    <header class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-5 shadow-lg mb-4 sticky top-0 z-30">
+    <header class="bg-blue-600 text-white shadow-lg mb-4 sticky top-0 z-30 no-print">
         <div class="container mx-auto">
-            <div class="flex flex-col gap-4">
-                <div class="flex justify-between items-center">
-                    <h1 class="text-2xl font-bold flex items-center gap-2">
-                        <i class="fas fa-cubes"></i> معرض ال.جي
-                    </h1>
-                    <div class="flex items-center gap-2 bg-blue-700/30 p-2 rounded-lg border border-blue-400/30">
-                        <span class="text-sm font-semibold whitespace-nowrap">الصرف:</span>
-                        <input type="number" id="exchangeRate" value="12000" class="w-20 bg-transparent border-none text-white text-center font-bold focus:ring-0">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl font-bold">معرض ال.جي</h1>
+                <div class="flex items-center gap-3">
+                    <button onclick="togglePrintOptions()" class="bg-blue-500 hover:bg-blue-400 px-3 py-1.5 rounded text-xs font-bold border border-blue-400">خيارات الطباعة</button>
+                    <button onclick="preparePrint()" class="bg-green-600 hover:bg-green-500 px-4 py-1.5 rounded text-xs font-bold border border-green-500">طباعة</button>
+                    <div class="flex items-center gap-2 bg-blue-700/40 p-2 rounded-lg border border-blue-400/30">
+                        <span class="text-xs">الصرف:</span>
+                        <input type="number" id="exchangeRate" value="12000" class="bg-transparent border-none text-white text-center font-bold text-sm focus:ring-0" style="width: 4.5rem;">
                     </div>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <div class="relative search-group">
-                        <input type="text" id="searchCat" placeholder="بحث بالتصنيف..." class="input-glass search-input" autocomplete="off">
-                        <div class="suggestions-list" id="suggestCat"></div>
-                    </div>
-                    <div class="relative search-group">
-                        <input type="text" id="searchSupplier" placeholder="بحث بالمورد..." class="input-glass search-input" autocomplete="off">
-                        <div class="suggestions-list" id="suggestSupplier"></div>
-                    </div>
-                    <div class="relative search-group">
-                        <input type="text" id="searchName" placeholder="بحث بالصنف..." class="input-glass search-input" autocomplete="off">
-                        <div class="suggestions-list" id="suggestName"></div>
-                    </div>
-                    <div class="relative search-group">
-                        <input type="text" id="searchQty" placeholder="بحث بالكمية..." class="input-glass search-input" autocomplete="off">
-                        <div class="suggestions-list" id="suggestQty"></div>
-                    </div>
+            <div class="grid grid-cols-4 gap-3 pb-2">
+                <div class="search-wrapper">
+                    <input type="text" id="searchCat" placeholder="التصنيف" class="input-glass search-input" autocomplete="off">
+                    <div id="suggestCat" class="suggestions-list"></div>
+                </div>
+                <div class="search-wrapper">
+                    <input type="text" id="searchSupplier" placeholder="المورد" class="input-glass search-input" autocomplete="off">
+                    <div id="suggestSupplier" class="suggestions-list"></div>
+                </div>
+                <div class="search-wrapper">
+                    <input type="text" id="searchName" placeholder="الصنف" class="input-glass search-input" autocomplete="off">
+                    <div id="suggestName" class="suggestions-list"></div>
+                </div>
+                <div class="search-wrapper">
+                    <input type="text" id="searchQty" placeholder="الكمية" class="input-glass search-input" autocomplete="off">
+                    <div id="suggestQty" class="suggestions-list"></div>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto px-4 pb-10">
+    <div id="printOptions" class="no-print">
+        <p class="font-bold text-xs mb-2">أعمدة الطباعة:</p>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs" id="columnCheckboxes"></div>
+        <button onclick="togglePrintOptions()" class="mt-4 w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ</button>
+    </div>
+
+    <main class="container mx-auto px-4">
         <div class="table-container">
-            <table>
+            <table id="mainTable">
                 <thead>
                     <tr>
-                        <th class="w-12">#</th>
-                        <th>التصنيف</th>
-                        <th>المورد</th>
-                        <th>الصنف</th>
-                        <th>الكمية</th>
-                        <th>شراء ($)</th>
-                        <th>الحسم</th>
-                        <th>بعد الحسم</th>
-                        <th>+15% ($)</th>
-                        <th>سوري (ل.س)</th>
+                        <th data-col="index" class="w-12">#</th>
+                        <th data-col="cat">التصنيف</th>
+                        <th data-col="supp">المورد</th>
+                        <th data-col="item">الصنف</th>
+                        <th data-col="qty">الكمية</th>
+                        <th data-col="buy">شراء</th>
+                        <th data-col="disc">حسم</th>
+                        <th data-col="final">صافي</th>
+                        <th data-col="plus">البيع($)</th>
+                        <th data-col="syp">سوري</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
@@ -145,155 +176,205 @@
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv';
         let allData = [];
+        const columns = [{id:'index',label:'#'},{id:'cat',label:'التصنيف'},{id:'supp',label:'المورد'},{id:'item',label:'الصنف'},{id:'qty',label:'الكمية'},{id:'buy',label:'شراء'},{id:'disc',label:'حسم'},{id:'final',label:'صافي'},{id:'plus',label:'البيع($)'},{id:'syp',label:'سوري'}];
+        
+        // متغيرات للتحكم في القوائم المنسدلة
         let currentFocus = -1;
+        let activeList = null;
+        let suggestionItems = [];
 
-        async function fetchData(isBackground = false) {
-            if (!isBackground) document.getElementById('loader').classList.remove('hidden');
+        async function fetchData() {
             try {
-                const response = await fetch(CSV_URL + '&t=' + new Date().getTime());
+                const response = await fetch(CSV_URL + '&t=' + Date.now());
                 const csvText = await response.text();
-                const lines = csvText.split('\n');
-                const cleanCsvText = lines.slice(1).join('\n');
-
-                Papa.parse(cleanCsvText, {
+                Papa.parse(csvText.split('\n').slice(1).join('\n'), {
                     header: true, skipEmptyLines: true,
-                    complete: function(results) {
-                        allData = results.data;
-                        if (allData.length > 0) allData.pop(); 
-                        filterAndRender();
-                        if (!isBackground) document.getElementById('loader').classList.add('hidden');
+                    complete: (res) => {
+                        allData = res.data;
+                        if (allData.length > 0) allData.pop();
+                        render();
+                        setupDropdowns();
+                        document.getElementById('loader').classList.add('hidden');
                     }
                 });
-            } catch (error) { console.error(error); }
+            } catch (e) { console.error(e); }
         }
 
-        function filterAndRender() {
-            const fCat = document.getElementById('searchCat').value.toLowerCase();
-            const fSupp = document.getElementById('searchSupplier').value.toLowerCase();
-            const fName = document.getElementById('searchName').value.toLowerCase();
-            const fQty = document.getElementById('searchQty').value.toLowerCase();
+        function setupDropdowns() {
+            const configs = [
+                { id: 'searchCat', suggestId: 'suggestCat', key: 'التصنيف' },
+                { id: 'searchSupplier', suggestId: 'suggestSupplier', key: 'المورد' },
+                { id: 'searchName', suggestId: 'suggestName', key: 'الصنف' },
+                { id: 'searchQty', suggestId: 'suggestQty', key: 'الكمية' }
+            ];
 
-            const filtered = allData.filter(row => {
-                return String(row['التصنيف'] || '').toLowerCase().includes(fCat) &&
-                       String(row['المورد'] || '').toLowerCase().includes(fSupp) &&
-                       String(row['الصنف'] || '').toLowerCase().includes(fName) &&
-                       String(row['الكمية'] || '').toLowerCase().includes(fQty);
+            configs.forEach(config => {
+                const input = document.getElementById(config.id);
+                const list = document.getElementById(config.suggestId);
+
+                const updateList = () => {
+                    const val = input.value.toLowerCase();
+                    const uniqueValues = [...new Set(allData.map(row => String(row[config.key] || '')))]
+                        .filter(v => v.toLowerCase().includes(val))
+                        .slice(0, 15);
+
+                    list.innerHTML = '';
+                    suggestionItems = [];
+                    
+                    if (uniqueValues.length > 0) {
+                        uniqueValues.forEach(v => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.textContent = v;
+                            div.onclick = () => {
+                                input.value = v;
+                                list.style.display = 'none';
+                                currentFocus = -1;
+                                render();
+                            };
+                            list.appendChild(div);
+                            suggestionItems.push(div);
+                        });
+                        list.style.display = 'block';
+                        activeList = list;
+                        currentFocus = -1;
+                    } else {
+                        list.style.display = 'none';
+                        activeList = null;
+                    }
+                };
+
+                input.onfocus = function() {
+                    updateList();
+                    activeList = list;
+                };
+                
+                input.oninput = function() {
+                    updateList();
+                    activeList = list;
+                };
+                
+                // إضافة التحكم بالسهمين لأعلى وأسفل
+                input.onkeydown = function(e) {
+                    if (!activeList || activeList.style.display === 'none') return;
+                    
+                    const items = activeList.getElementsByClassName('suggestion-item');
+                    
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        currentFocus = Math.min(currentFocus + 1, items.length - 1);
+                        updateActiveItem(items);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        currentFocus = Math.max(currentFocus - 1, -1);
+                        updateActiveItem(items);
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (currentFocus > -1 && items[currentFocus]) {
+                            items[currentFocus].click();
+                        }
+                    } else if (e.key === 'Escape') {
+                        activeList.style.display = 'none';
+                        currentFocus = -1;
+                    }
+                };
             });
-            renderTable(filtered);
         }
 
-        function renderTable(data) {
+        function updateActiveItem(items) {
+            // إزالة النشط من جميع العناصر
+            for (let i = 0; i < items.length; i++) {
+                items[i].classList.remove('active');
+            }
+            
+            // إضافة النشط للعنصر المحدد
+            if (currentFocus > -1 && items[currentFocus]) {
+                items[currentFocus].classList.add('active');
+                items[currentFocus].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('search-input')) {
+                document.querySelectorAll('.suggestions-list').forEach(l => {
+                    l.style.display = 'none';
+                });
+                currentFocus = -1;
+                activeList = null;
+            }
+        });
+
+        function render() {
             const tbody = document.getElementById('tableBody');
             const rate = parseFloat(document.getElementById('exchangeRate').value) || 1;
+            const filters = {
+                cat: document.getElementById('searchCat').value.toLowerCase(),
+                supp: document.getElementById('searchSupplier').value.toLowerCase(),
+                name: document.getElementById('searchName').value.toLowerCase(),
+                qty: document.getElementById('searchQty').value.toLowerCase()
+            };
             tbody.innerHTML = '';
-
-            data.forEach((row, index) => {
-                const buyPrice = parseFloat(String(row['شراء']).replace(/[^\d.]/g, '')) || 0;
-                const discount = parseFloat(String(row['الحسم']).replace(/[^\d.]/g, '')) || 0;
-                const afterDiscount = buyPrice - (buyPrice * (discount / 100));
-                const plus15 = afterDiscount * 1.15;
-                const sypPrice = plus15 * rate;
-
+            allData.filter(row => 
+                String(row['التصنيف']||'').toLowerCase().includes(filters.cat) &&
+                String(row['المورد']||'').toLowerCase().includes(filters.supp) &&
+                String(row['الصنف']||'').toLowerCase().includes(filters.name) &&
+                String(row['الكمية']||'').toLowerCase().includes(filters.qty)
+            ).forEach((row, i) => {
+                const buy = parseFloat(String(row['شراء']).replace(/[^\d.]/g, '')) || 0;
+                const disc = parseFloat(String(row['الحسم']).replace(/[^\d.]/g, '')) || 0;
+                const final = buy - (buy * disc / 100);
+                const plus = final * 1.15;
+                const syp = plus * rate;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="text-gray-400 text-xs">${index + 1}</td>
+                    <td class="text-gray-400 text-[10px]">${i + 1}</td>
                     <td><span class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-[11px] font-bold">${row['التصنيف'] || ''}</span></td>
-                    <td class="text-xs">${row['المورد'] || ''}</td>
+                    <td class="text-[11px] text-gray-500">${row['المورد'] || ''}</td>
                     <td class="text-right font-bold text-gray-800">${row['الصنف'] || ''}</td>
                     <td class="font-bold">${row['الكمية'] || ''}</td>
-                    <td>${buyPrice.toFixed(2)}</td>
-                    <td class="text-red-500 text-xs">${discount}%</td>
-                    <td>${afterDiscount.toFixed(2)}</td>
-                    <td class="bg-orange-50 font-bold">${plus15.toFixed(2)}</td>
-                    <td class="bg-green-50 text-green-700 font-bold">${Math.round(sypPrice).toLocaleString()}</td>
+                    <td>${buy.toFixed(2)}</td>
+                    <td class="text-red-500">${disc}%</td>
+                    <td>${final.toFixed(2)}</td>
+                    <td class="bg-orange-50 font-bold">${plus.toFixed(2)}</td>
+                    <td class="bg-green-50 text-green-700 font-bold">${Math.round(syp).toLocaleString()}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // إعداد الاقتراحات لكل حقل
-        function setupAutocomplete(inputId, suggestId, dataKey) {
-            const input = document.getElementById(inputId);
-            const suggestBox = document.getElementById(suggestId);
-
-            input.addEventListener('input', function() {
-                const val = this.value;
-                closeAllLists();
-                if (!val) return false;
-                currentFocus = -1;
-
-                const uniqueValues = [...new Set(allData.map(item => String(item[dataKey] || '')))]
-                                    .filter(v => v.toLowerCase().includes(val.toLowerCase()))
-                                    .slice(0, 10);
-
-                if (uniqueValues.length > 0) {
-                    suggestBox.style.display = 'block';
-                    uniqueValues.forEach(v => {
-                        const div = document.createElement('div');
-                        div.className = 'suggestion-item';
-                        div.innerHTML = v;
-                        div.addEventListener('click', function() {
-                            input.value = v;
-                            closeAllLists();
-                            filterAndRender();
-                        });
-                        suggestBox.appendChild(div);
-                    });
-                }
-            });
-
-            input.addEventListener('keydown', function(e) {
-                let x = suggestBox.getElementsByClassName('suggestion-item');
-                if (e.keyCode == 40) { // سهم أسفل
-                    currentFocus++;
-                    addActive(x);
-                } else if (e.keyCode == 38) { // سهم أعلى
-                    currentFocus--;
-                    addActive(x);
-                } else if (e.keyCode == 13) { // Enter
-                    e.preventDefault();
-                    if (currentFocus > -1 && x) x[currentFocus].click();
-                }
+        function initPrintOptions() {
+            const container = document.getElementById('columnCheckboxes');
+            columns.forEach(col => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-2 cursor-pointer';
+                label.innerHTML = `<input type="checkbox" checked data-col-ref="${col.id}"> ${col.label}`;
+                container.appendChild(label);
             });
         }
 
-        function addActive(x) {
-            if (!x) return false;
-            removeActive(x);
-            if (currentFocus >= x.length) currentFocus = 0;
-            if (currentFocus < 0) currentFocus = (x.length - 1);
-            x[currentFocus].classList.add('active');
-            x[currentFocus].scrollIntoView({ block: 'nearest' });
+        function togglePrintOptions() {
+            const div = document.getElementById('printOptions');
+            div.style.display = div.style.display === 'block' ? 'none' : 'block';
         }
 
-        function removeActive(x) {
-            for (let i = 0; i < x.length; i++) x[i].classList.remove('active');
+        function preparePrint() {
+            const checks = document.querySelectorAll('#columnCheckboxes input');
+            document.querySelectorAll('th, td').forEach(el => el.classList.remove('print-hidden'));
+            checks.forEach(check => {
+                if (!check.checked) {
+                    const colId = check.getAttribute('data-col-ref');
+                    const th = document.querySelector(`th[data-col="${colId}"]`);
+                    const colIndex = Array.from(th.parentNode.children).indexOf(th) + 1;
+                    th.classList.add('print-hidden');
+                    document.querySelectorAll(`#tableBody tr td:nth-child(${colIndex})`).forEach(td => td.classList.add('print-hidden'));
+                }
+            });
+            window.print();
         }
 
-        function closeAllLists() {
-            const items = document.getElementsByClassName('suggestions-list');
-            for (let i = 0; i < items.length; i++) items[i].innerHTML = '', items[i].style.display = 'none';
-        }
-
-        document.addEventListener('click', e => { if (!e.target.classList.contains('search-input')) closeAllLists(); });
-
-        // تفعيل الفلاتر
-        setupAutocomplete('searchCat', 'suggestCat', 'التصنيف');
-        setupAutocomplete('searchSupplier', 'suggestSupplier', 'المورد');
-        setupAutocomplete('searchName', 'suggestName', 'الصنف');
-        setupAutocomplete('searchQty', 'suggestQty', 'الكمية');
-
-        document.querySelectorAll('.search-input').forEach(input => {
-            input.addEventListener('input', filterAndRender);
-        });
-        document.getElementById('exchangeRate').addEventListener('input', filterAndRender);
-
-        window.onload = () => {
-            fetchData();
-            // التحديث كل 5 دقائق
-            setInterval(() => fetchData(true), 300000); 
-        };
+        document.querySelectorAll('.search-input').forEach(el => el.addEventListener('input', render));
+        document.getElementById('exchangeRate').addEventListener('input', render);
+        window.onload = () => { initPrintOptions(); fetchData(); };
     </script>
 </body>
-
 </html>
