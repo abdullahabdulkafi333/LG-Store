@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معرض ال.جي</title>
+    <title>معرض 1 ال.جي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -73,10 +73,7 @@
             font-weight: 600;
         }
 
-        .suggestion-item:hover, .suggestion-item.active { 
-            background: #3b82f6; 
-            color: white !important; 
-        }
+        .suggestion-item:hover { background: #3b82f6; color: white !important; }
 
         header { padding: 1.2rem 1rem !important; }
 
@@ -120,19 +117,19 @@
 
             <div class="grid grid-cols-4 gap-3 pb-2">
                 <div class="search-wrapper">
-                    <input type="text" id="searchCat" placeholder="التصنيف" class="input-glass search-input" autocomplete="off">
+                    <input type="text" id="searchCat" placeholder="التصنيف" class="input-glass search-input" autocomplete="off" onfocus="showAllSuggestions('searchCat', 'suggestCat', 'التصنيف')">
                     <div id="suggestCat" class="suggestions-list"></div>
                 </div>
                 <div class="search-wrapper">
-                    <input type="text" id="searchSupplier" placeholder="المورد" class="input-glass search-input" autocomplete="off">
+                    <input type="text" id="searchSupplier" placeholder="المورد" class="input-glass search-input" autocomplete="off" onfocus="showAllSuggestions('searchSupplier', 'suggestSupplier', 'المورد')">
                     <div id="suggestSupplier" class="suggestions-list"></div>
                 </div>
                 <div class="search-wrapper">
-                    <input type="text" id="searchName" placeholder="الصنف" class="input-glass search-input" autocomplete="off">
+                    <input type="text" id="searchName" placeholder="الصنف" class="input-glass search-input" autocomplete="off" onfocus="showAllSuggestions('searchName', 'suggestName', 'الصنف')">
                     <div id="suggestName" class="suggestions-list"></div>
                 </div>
                 <div class="search-wrapper">
-                    <input type="text" id="searchQty" placeholder="الكمية" class="input-glass search-input" autocomplete="off">
+                    <input type="text" id="searchQty" placeholder="الكمية" class="input-glass search-input" autocomplete="off" onfocus="showAllSuggestions('searchQty', 'suggestQty', 'الكمية')">
                     <div id="suggestQty" class="suggestions-list"></div>
                 </div>
             </div>
@@ -170,7 +167,6 @@
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv';
         let allData = [];
-        let currentFocus = -1;
 
         async function fetchData() {
             try {
@@ -188,74 +184,43 @@
             } catch (e) { console.error(e); }
         }
 
-        function setupAutocomplete(inputId, suggestId, key) {
+        function showAllSuggestions(inputId, suggestId, key) {
             const input = document.getElementById(inputId);
             const list = document.getElementById(suggestId);
+            const val = input.value.toLowerCase();
+            
+            const uniqueValues = [...new Set(allData.map(row => String(row[key] || '')))]
+                .filter(v => v.toLowerCase().includes(val))
+                .sort();
 
-            input.addEventListener("input", function() {
-                const val = this.value.toLowerCase();
-                currentFocus = -1;
-                const uniqueValues = [...new Set(allData.map(row => String(row[key] || '')))]
-                    .filter(v => v.toLowerCase().includes(val))
-                    .sort();
+            list.innerHTML = '';
+            uniqueValues.forEach(v => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.textContent = v;
+                div.onmousedown = () => { // استخدام onmousedown لضمان الاختيار قبل فقدان التركيز
+                    input.value = v;
+                    list.style.display = 'none';
+                    render();
+                };
+                list.appendChild(div);
+            });
+            list.style.display = uniqueValues.length ? 'block' : 'none';
+        }
 
-                list.innerHTML = '';
-                if (!val && !input.matches(':focus')) { list.style.display = 'none'; return; }
-
-                uniqueValues.forEach((v, i) => {
-                    const div = document.createElement('div');
-                    div.className = 'suggestion-item';
-                    div.textContent = v;
-                    div.addEventListener("click", () => {
-                        input.value = v;
-                        list.style.display = 'none';
-                        render();
-                    });
-                    list.appendChild(div);
-                });
-                list.style.display = uniqueValues.length ? 'block' : 'none';
+        // إغلاق القوائم عند الكتابة أو النقر في مكان آخر
+        document.querySelectorAll('.search-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const suggestId = e.target.id.replace('search', 'suggest');
+                const keyMap = {'searchCat':'التصنيف', 'searchSupplier':'المورد', 'searchName':'الصنف', 'searchQty':'الكمية'};
+                showAllSuggestions(e.target.id, suggestId, keyMap[e.target.id]);
                 render();
             });
-
-            input.addEventListener("keydown", function(e) {
-                let x = list.getElementsByClassName("suggestion-item");
-                if (e.keyCode == 40) { // سهم أسفل
-                    currentFocus++;
-                    addActive(x);
-                } else if (e.keyCode == 38) { // سهم أعلى
-                    currentFocus--;
-                    addActive(x);
-                } else if (e.keyCode == 13) { // Enter
-                    e.preventDefault();
-                    if (currentFocus > -1 && x) x[currentFocus].click();
-                }
+            input.addEventListener('blur', () => {
+                setTimeout(() => {
+                    document.querySelectorAll('.suggestions-list').forEach(l => l.style.display = 'none');
+                }, 200);
             });
-
-            input.addEventListener("focus", function() {
-                if (allData.length) {
-                    const event = new Event('input');
-                    input.dispatchEvent(event);
-                }
-            });
-        }
-
-        function addActive(x) {
-            if (!x) return false;
-            removeActive(x);
-            if (currentFocus >= x.length) currentFocus = 0;
-            if (currentFocus < 0) currentFocus = (x.length - 1);
-            x[currentFocus].classList.add("active");
-            x[currentFocus].scrollIntoView({ block: 'nearest' });
-        }
-
-        function removeActive(x) {
-            for (let i = 0; i < x.length; i++) x[i].classList.remove("active");
-        }
-
-        document.addEventListener("click", e => {
-            if (!e.target.classList.contains('search-input')) {
-                document.querySelectorAll('.suggestions-list').forEach(l => l.style.display = 'none');
-            }
         });
 
         function render() {
@@ -324,14 +289,7 @@
         }
 
         document.getElementById('exchangeRate').addEventListener('input', render);
-        window.onload = () => { 
-            initPrintOptions(); 
-            fetchData();
-            setupAutocomplete('searchCat', 'suggestCat', 'التصنيف');
-            setupAutocomplete('searchSupplier', 'suggestSupplier', 'المورد');
-            setupAutocomplete('searchName', 'suggestName', 'الصنف');
-            setupAutocomplete('searchQty', 'suggestQty', 'الكمية');
-        };
+        window.onload = () => { initPrintOptions(); fetchData(); };
     </script>
 </body>
 </html>
