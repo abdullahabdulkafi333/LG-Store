@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>معرض ال.جي - النسخة السريعة</title>
+    <title>معرض ال.جي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
         body { font-family: 'Cairo', sans-serif; background: #f8fafc; font-size: 0.8rem; color: #334155; }
         .table-container { max-height: 75vh; overflow-y: auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         thead th { position: sticky; top: 0; z-index: 20; background-color: #2563eb; color: white; padding: 10px; font-size: 0.85rem; }
@@ -23,7 +23,7 @@
 
     <div id="loader" class="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-4"></div>
-        <p class="text-blue-600 font-bold">جاري تحميل البيانات بسرعة...</p>
+        <p class="text-blue-600 font-bold">جاري تحميل البيانات ...</p>
     </div>
 
     <header class="bg-blue-600 text-white p-4 sticky top-0 z-30 no-print shadow-md">
@@ -90,7 +90,7 @@
     </main>
 
     <script>
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv';
+        const CSV_URL = 'https://https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv';
         let allData = [];
 
         async function fetchData() {
@@ -206,4 +206,3 @@
     </script>
 </body>
 </html>
-
