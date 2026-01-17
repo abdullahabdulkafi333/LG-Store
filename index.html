@@ -540,7 +540,7 @@
                 
                 const timestamp = Date.now();
                 
-                // تحميل بيانات الأصناف
+                // تحميل بيانات الأصناف (مع الحفاظ على الشكل القديم للأصناف فقط)
                 const itemsResponse = await fetch(ITEMS_CSV_URL + '&t=' + timestamp);
                 const itemsCsvText = await itemsResponse.text();
                 
@@ -554,11 +554,11 @@
                     }
                 });
 
-                // تحميل بيانات المبيعات
+                // تحميل بيانات المبيعات (بدون إزالة السطر الأول)
                 const salesResponse = await fetch(SALES_CSV_URL + '&t=' + timestamp);
                 const salesCsvText = await salesResponse.text();
                 
-                Papa.parse(salesCsvText.split('\n').slice(1).join('\n'), {
+                Papa.parse(salesCsvText, {  // تم إزالة split('\n').slice(1)
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allSalesData = res.data;
@@ -568,11 +568,11 @@
                     }
                 });
 
-                // تحميل بيانات المشتريات
+                // تحميل بيانات المشتريات (بدون إزالة السطر الأول)
                 const purchasesResponse = await fetch(PURCHASES_CSV_URL + '&t=' + timestamp);
                 const purchasesCsvText = await purchasesResponse.text();
                 
-                Papa.parse(purchasesCsvText.split('\n').slice(1).join('\n'), {
+                Papa.parse(purchasesCsvText, {  // تم إزالة split('\n').slice(1)
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allPurchasesData = res.data;
@@ -582,11 +582,11 @@
                     }
                 });
 
-                // تحميل بيانات اليومية
+                // تحميل بيانات اليومية (بدون إزالة السطر الأول)
                 const journalResponse = await fetch(JOURNAL_CSV_URL + '&t=' + timestamp);
                 const journalCsvText = await journalResponse.text();
                 
-                Papa.parse(journalCsvText.split('\n').slice(1).join('\n'), {
+                Papa.parse(journalCsvText, {  // تم إزالة split('\n').slice(1)
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allJournalData = res.data;
@@ -929,8 +929,8 @@
                 const price = parseFloat(String(row['السعر دولار']).replace(/[^\d.]/g, '')) || 0;
                 const quantity = parseFloat(String(row['الكمية']).replace(/[^\d.]/g, '')) || 0;
                 const totalUsdRow = price * quantity;
-                // استخدام عمود "السعر سوري" (العمود J) لسعر السوري
-                const priceSyp = parseFloat(String(row['السعر سوري']).replace(/[^\d.]/g, '')) || 0;
+                // استخدام عمود "سوري" (العمود J) لسعر السوري
+                const priceSyp = parseFloat(String(row['سوري']).replace(/[^\d.]/g, '')) || 0;
                 // استخدام عمود "ا.سوري" (العمود K) لإجمالي السوري
                 const totalSypRow = parseFloat(String(row['ا.سوري']).replace(/[^\d.]/g, '')) || 0;
                 
@@ -1212,5 +1212,3 @@
     </script>
 </body>
 </html>
-
-
