@@ -530,6 +530,10 @@
             purchases: {},
             journal: {}
         };
+        
+        // متغيرات للتحكم في القوائم المنسدلة
+        let currentFocusIndex = -1;
+        let currentSuggestItems = [];
 
         // تعريف الأعمدة لكل تبويب
         const itemsColumns = [
@@ -559,9 +563,6 @@
             {id:'usd',label:'دولار'},{id:'syp',label:'سوري'},
             {id:'description',label:'البيان'}
         ];
-
-        // متغير للتحكم في القائمة المنسدلة الحالية
-        let activeSuggestList = null;
 
         // تحميل جميع البيانات
         async function fetchAllData(showSyncIndicator = false) {
@@ -725,6 +726,7 @@
                     .slice(0, 15);
 
                 list.innerHTML = '';
+                currentSuggestItems = [];
                 
                 if (allNames.length > 0) {
                     allNames.forEach(name => {
@@ -737,44 +739,46 @@
                             renderJournal();
                         };
                         list.appendChild(div);
+                        currentSuggestItems.push(div);
                     });
                     list.style.display = 'block';
-                    activeSuggestList = list;
+                    currentFocusIndex = -1;
                 } else {
                     list.style.display = 'none';
-                    activeSuggestList = null;
+                    currentFocusIndex = -1;
+                    currentSuggestItems = [];
                 }
             };
 
             input.onfocus = function() {
                 hideAllSuggestLists();
                 updateList();
-                activeSuggestList = list;
             };
             
             input.oninput = function() {
                 updateList();
-                activeSuggestList = list;
             };
             
             input.onkeydown = function(e) {
-                if (!activeSuggestList || activeSuggestList.style.display === 'none') return;
-                
-                const items = activeSuggestList.getElementsByClassName('suggestion-item');
-                let currentFocus = -1;
-                
                 if (e.key === 'ArrowDown') {
                     e.preventDefault();
-                    currentFocus = Math.min(currentFocus + 1, items.length - 1);
-                    updateActiveItem(items, currentFocus);
+                    if (currentSuggestItems.length > 0) {
+                        currentFocusIndex = Math.min(currentFocusIndex + 1, currentSuggestItems.length - 1);
+                        updateActiveItem();
+                    }
                 } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    currentFocus = Math.max(currentFocus - 1, -1);
-                    updateActiveItem(items, currentFocus);
+                    if (currentSuggestItems.length > 0) {
+                        currentFocusIndex = Math.max(currentFocusIndex - 1, 0);
+                        updateActiveItem();
+                    }
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
-                    if (currentFocus > -1 && items[currentFocus]) {
-                        items[currentFocus].click();
+                    if (currentFocusIndex >= 0 && currentSuggestItems[currentFocusIndex]) {
+                        currentSuggestItems[currentFocusIndex].click();
+                    } else if (currentSuggestItems.length > 0 && currentSuggestItems[0]) {
+                        // إذا لم يكن هناك عنصر محدد، اختر الأول
+                        currentSuggestItems[0].click();
                     }
                 } else if (e.key === 'Escape') {
                     hideAllSuggestLists();
@@ -798,6 +802,7 @@
                         .slice(0, 15);
 
                     list.innerHTML = '';
+                    currentSuggestItems = [];
                     
                     if (uniqueValues.length > 0) {
                         uniqueValues.forEach(v => {
@@ -813,44 +818,46 @@
                                 else if (currentTab === 'journal') renderJournal();
                             };
                             list.appendChild(div);
+                            currentSuggestItems.push(div);
                         });
                         list.style.display = 'block';
-                        activeSuggestList = list;
+                        currentFocusIndex = -1;
                     } else {
                         list.style.display = 'none';
-                        activeSuggestList = null;
+                        currentFocusIndex = -1;
+                        currentSuggestItems = [];
                     }
                 };
 
                 input.onfocus = function() {
                     hideAllSuggestLists();
                     updateList();
-                    activeSuggestList = list;
                 };
                 
                 input.oninput = function() {
                     updateList();
-                    activeSuggestList = list;
                 };
                 
                 input.onkeydown = function(e) {
-                    if (!activeSuggestList || activeSuggestList.style.display === 'none') return;
-                    
-                    const items = activeSuggestList.getElementsByClassName('suggestion-item');
-                    let currentFocus = -1;
-                    
                     if (e.key === 'ArrowDown') {
                         e.preventDefault();
-                        currentFocus = Math.min(currentFocus + 1, items.length - 1);
-                        updateActiveItem(items, currentFocus);
+                        if (currentSuggestItems.length > 0) {
+                            currentFocusIndex = Math.min(currentFocusIndex + 1, currentSuggestItems.length - 1);
+                            updateActiveItem();
+                        }
                     } else if (e.key === 'ArrowUp') {
                         e.preventDefault();
-                        currentFocus = Math.max(currentFocus - 1, -1);
-                        updateActiveItem(items, currentFocus);
+                        if (currentSuggestItems.length > 0) {
+                            currentFocusIndex = Math.max(currentFocusIndex - 1, 0);
+                            updateActiveItem();
+                        }
                     } else if (e.key === 'Enter') {
                         e.preventDefault();
-                        if (currentFocus > -1 && items[currentFocus]) {
-                            items[currentFocus].click();
+                        if (currentFocusIndex >= 0 && currentSuggestItems[currentFocusIndex]) {
+                            currentSuggestItems[currentFocusIndex].click();
+                        } else if (currentSuggestItems.length > 0 && currentSuggestItems[0]) {
+                            // إذا لم يكن هناك عنصر محدد، اختر الأول
+                            currentSuggestItems[0].click();
                         }
                     } else if (e.key === 'Escape') {
                         hideAllSuggestLists();
@@ -859,14 +866,16 @@
             });
         }
 
-        function updateActiveItem(items, currentFocus) {
-            for (let i = 0; i < items.length; i++) {
-                items[i].classList.remove('active');
-            }
+        function updateActiveItem() {
+            // إزالة التحديد من جميع العناصر
+            currentSuggestItems.forEach(item => {
+                item.classList.remove('active');
+            });
             
-            if (currentFocus > -1 && items[currentFocus]) {
-                items[currentFocus].classList.add('active');
-                items[currentFocus].scrollIntoView({ block: 'nearest' });
+            // إضافة التحديد للعنصر الحالي
+            if (currentFocusIndex >= 0 && currentSuggestItems[currentFocusIndex]) {
+                currentSuggestItems[currentFocusIndex].classList.add('active');
+                currentSuggestItems[currentFocusIndex].scrollIntoView({ block: 'nearest' });
             }
         }
 
@@ -875,7 +884,8 @@
             document.querySelectorAll('.suggestions-list').forEach(l => {
                 l.style.display = 'none';
             });
-            activeSuggestList = null;
+            currentFocusIndex = -1;
+            currentSuggestItems = [];
         }
 
         // إخفاء القوائم عند النقر خارجها
