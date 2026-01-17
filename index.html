@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- إضافة meta tags مهمة -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">
+    <meta name="referrer" content="no-referrer-when-downgrade">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
         
@@ -38,6 +41,17 @@
         }
 
         td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+
+        /* زيادة حجم خط جدول الأرصدة فقط */
+        #balancesTableBody td {
+            font-size: 0.85rem !important; /* زيادة حجم الخط درجة واحدة */
+        }
+        
+        /* تنسيق خاص لعمود الحساب في الأرصدة */
+        #balancesTableBody td:first-child + td { /* عمود الحساب (العمود الثاني) */
+            text-align: right !important;
+            font-weight: 700 !important;
+        }
 
         .search-wrapper { position: relative; width: 100%; }
 
@@ -229,6 +243,32 @@
             color: #dc2626 !important;
             font-weight: 700;
         }
+        
+        /* خطأ في تحميل البيانات */
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fee2e2;
+            border: 2px solid #dc2626;
+            border-radius: 8px;
+            padding: 20px;
+            z-index: 1000;
+            text-align: center;
+            max-width: 400px;
+            display: none;
+        }
+        
+        .error-message button {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -236,6 +276,13 @@
     <div id="loader" class="fixed inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
         <p class="mt-4 text-gray-600 text-sm">جاري تحميل البيانات...</p>
+    </div>
+
+    <!-- رسالة الخطأ -->
+    <div id="errorMessage" class="error-message no-print">
+        <h3 class="text-red-700 font-bold mb-2">⚠️ خطأ في تحميل البيانات</h3>
+        <p id="errorText" class="text-gray-700 mb-4">تعذر تحميل البيانات. الرجاء التحقق من اتصال الإنترنت والمحاولة مرة أخرى.</p>
+        <button onclick="retryLoadData()"><i class="fas fa-sync-alt mr-2"></i> إعادة المحاولة</button>
     </div>
 
     <!-- مؤشر المزامنة -->
@@ -562,8 +609,8 @@
                             <th data-col="sales_syp">مبيعات سوري</th>
                             <th data-col="purchases_usd">مشتريات دولار</th>
                             <th data-col="purchases_syp">مشتريات سوري</th>
-                            <th data-col="pressure_usd">الضغوط دولار</th>
-                            <th data-col="pressure_syp">الضغوط سوري</th>
+                            <th data-col="payment_usd">المدفوع دولار</th>
+                            <th data-col="payment_syp">المدفوع سوري</th>
                             <th data-col="balance_usd">الرصيد دولار</th>
                             <th data-col="balance_syp">الرصيد سوري</th>
                         </tr>
@@ -575,7 +622,7 @@
     </main>
 
     <script>
-        // روابط البيانات
+        // روابط البيانات مع إضافة timeout أقل لتحميل أسرع
         const ITEMS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv';
         const SALES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=1169303046&single=true&output=csv';
         const PURCHASES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=1461133672&single=true&output=csv';
@@ -605,7 +652,7 @@
         let currentFocusIndex = -1;
         let currentSuggestItems = [];
 
-        // تعريف الأعمدة لكل تبويب
+        // تعريف الأعمدة لكل تبويب - تم تعديل أعمدة الأرصدة
         const itemsColumns = [
             {id:'index',label:'#'},{id:'cat',label:'التصنيف'},{id:'supp',label:'المورد'},
             {id:'item',label:'الصنف'},{id:'qty',label:'الكمية'},{id:'buy',label:'شراء'},
@@ -634,6 +681,7 @@
             {id:'description',label:'البيان'}
         ];
 
+        // تم تغيير أعمدة الأرصدة
         const balancesColumns = [
             {id:'index',label:'#'},
             {id:'account',label:'الحساب'},
@@ -641,13 +689,31 @@
             {id:'sales_syp',label:'مبيعات سوري'},
             {id:'purchases_usd',label:'مشتريات دولار'},
             {id:'purchases_syp',label:'مشتريات سوري'},
-            {id:'pressure_usd',label:'الضغوط دولار'},
-            {id:'pressure_syp',label:'الضغوط سوري'},
+            {id:'payment_usd',label:'المدفوع دولار'},  // تغيير من الضغوط دولار
+            {id:'payment_syp',label:'المدفوع سوري'},    // تغيير من الضغوط سوري
             {id:'balance_usd',label:'الرصيد دولار'},
             {id:'balance_syp',label:'الرصيد سوري'}
         ];
 
-        // تحميل جميع البيانات
+        // إظهار رسالة الخطأ
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+
+        // إخفاء رسالة الخطأ
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // إعادة محاولة تحميل البيانات
+        function retryLoadData() {
+            hideError();
+            document.getElementById('loader').classList.remove('hidden');
+            fetchAllData();
+        }
+
+        // تحميل سريع للبيانات مع timeout أقل
         async function fetchAllData(showSyncIndicator = false) {
             try {
                 if (showSyncIndicator) {
@@ -656,106 +722,172 @@
                 
                 const timestamp = Date.now();
                 
-                // تحميل بيانات الأصناف (مع الحفاظ على الشكل القديم للأصناف فقط)
-                try {
-                    const itemsResponse = await fetch(ITEMS_CSV_URL + '&t=' + timestamp);
-                    const itemsCsvText = await itemsResponse.text();
-                    
-                    Papa.parse(itemsCsvText.split('\n').slice(1).join('\n'), {
-                        header: true, skipEmptyLines: true,
-                        complete: (res) => {
-                            allItemsData = res.data;
-                            if (allItemsData.length > 0) allItemsData.pop();
+                // إخفاء الـ loader بسرعة أكبر
+                setTimeout(() => {
+                    document.getElementById('loader').classList.add('hidden');
+                }, 300);
+                
+                // تحميل البيانات بسرعة - استخدام Promise.all لتسريع التحميل
+                const fetchPromises = [];
+                
+                // دالة سريعة لتحميل البيانات
+                const quickFetch = async (url) => {
+                    try {
+                        const controller = new AbortController();
+                        const timeout = setTimeout(() => controller.abort(), 5000); // 5 ثواني بدلاً من 10
+                        
+                        const response = await fetch(url + '&t=' + timestamp, {
+                            signal: controller.signal,
+                            mode: 'cors',
+                            cache: 'no-cache'
+                        });
+                        
+                        clearTimeout(timeout);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        
+                        return await response.text();
+                    } catch (error) {
+                        console.warn('تحذير في تحميل البيانات:', error.message);
+                        return ''; // إرجاع سلسلة فارغة بدلاً من رمي خطأ
+                    }
+                };
+                
+                // البدء في تحميل جميع البيانات بالتوازي
+                fetchPromises.push(quickFetch(ITEMS_CSV_URL).then(async (csvText) => {
+                    if (csvText) {
+                        try {
+                            // معالجة سريعة للبيانات
+                            const rows = csvText.split('\n');
+                            const headers = rows[1] ? rows[1].split(',') : [];
+                            allItemsData = rows.slice(2, rows.length - 1).map(row => {
+                                const values = row.split(',');
+                                const obj = {};
+                                headers.forEach((header, i) => {
+                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
+                                });
+                                return obj;
+                            }).filter(row => Object.values(row).some(val => val !== ''));
+                            
                             renderItems();
                             setupItemsDropdowns();
+                        } catch (e) {
+                            console.warn('خطأ في معالجة بيانات الأصناف:', e);
                         }
-                    });
-                } catch (e) {
-                    console.error('خطأ في تحميل بيانات الأصناف:', e);
-                }
-
-                // تحميل بيانات المبيعات (بدون إزالة السطر الأول)
-                try {
-                    const salesResponse = await fetch(SALES_CSV_URL + '&t=' + timestamp);
-                    const salesCsvText = await salesResponse.text();
-                    
-                    Papa.parse(salesCsvText, {
-                        header: true, skipEmptyLines: true,
-                        complete: (res) => {
-                            allSalesData = res.data;
-                            if (allSalesData.length > 0) allSalesData.pop();
+                    }
+                }));
+                
+                fetchPromises.push(quickFetch(SALES_CSV_URL).then(async (csvText) => {
+                    if (csvText) {
+                        try {
+                            // معالجة سريعة للبيانات
+                            const rows = csvText.split('\n');
+                            const headers = rows[0] ? rows[0].split(',') : [];
+                            allSalesData = rows.slice(1, rows.length - 1).map(row => {
+                                const values = row.split(',');
+                                const obj = {};
+                                headers.forEach((header, i) => {
+                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
+                                });
+                                return obj;
+                            }).filter(row => Object.values(row).some(val => val !== ''));
+                            
                             renderSales();
                             setupSalesDropdowns();
+                        } catch (e) {
+                            console.warn('خطأ في معالجة بيانات المبيعات:', e);
                         }
-                    });
-                } catch (e) {
-                    console.error('خطأ في تحميل بيانات المبيعات:', e);
-                }
-
-                // تحميل بيانات المشتريات (بدون إزالة السطر الأول)
-                try {
-                    const purchasesResponse = await fetch(PURCHASES_CSV_URL + '&t=' + timestamp);
-                    const purchasesCsvText = await purchasesResponse.text();
-                    
-                    Papa.parse(purchasesCsvText, {
-                        header: true, skipEmptyLines: true,
-                        complete: (res) => {
-                            allPurchasesData = res.data;
-                            if (allPurchasesData.length > 0) allPurchasesData.pop();
+                    }
+                }));
+                
+                fetchPromises.push(quickFetch(PURCHASES_CSV_URL).then(async (csvText) => {
+                    if (csvText) {
+                        try {
+                            // معالجة سريعة للبيانات
+                            const rows = csvText.split('\n');
+                            const headers = rows[0] ? rows[0].split(',') : [];
+                            allPurchasesData = rows.slice(1, rows.length - 1).map(row => {
+                                const values = row.split(',');
+                                const obj = {};
+                                headers.forEach((header, i) => {
+                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
+                                });
+                                return obj;
+                            }).filter(row => Object.values(row).some(val => val !== ''));
+                            
                             renderPurchases();
                             setupPurchasesDropdowns();
+                        } catch (e) {
+                            console.warn('خطأ في معالجة بيانات المشتريات:', e);
                         }
-                    });
-                } catch (e) {
-                    console.error('خطأ في تحميل بيانات المشتريات:', e);
-                }
-
-                // تحميل بيانات اليومية (بدون إزالة السطر الأول)
-                try {
-                    const journalResponse = await fetch(JOURNAL_CSV_URL + '&t=' + timestamp);
-                    const journalCsvText = await journalResponse.text();
-                    
-                    Papa.parse(journalCsvText, {
-                        header: true, skipEmptyLines: true,
-                        complete: (res) => {
-                            allJournalData = res.data;
-                            if (allJournalData.length > 0) allJournalData.pop();
+                    }
+                }));
+                
+                fetchPromises.push(quickFetch(JOURNAL_CSV_URL).then(async (csvText) => {
+                    if (csvText) {
+                        try {
+                            // معالجة سريعة للبيانات
+                            const rows = csvText.split('\n');
+                            const headers = rows[0] ? rows[0].split(',') : [];
+                            allJournalData = rows.slice(1, rows.length - 1).map(row => {
+                                const values = row.split(',');
+                                const obj = {};
+                                headers.forEach((header, i) => {
+                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
+                                });
+                                return obj;
+                            }).filter(row => Object.values(row).some(val => val !== ''));
+                            
                             renderJournal();
                             setupJournalDropdowns();
+                        } catch (e) {
+                            console.warn('خطأ في معالجة بيانات اليومية:', e);
                         }
-                    });
-                } catch (e) {
-                    console.error('خطأ في تحميل بيانات اليومية:', e);
-                }
-
-                // تحميل بيانات الأرصدة
-                try {
-                    const balancesResponse = await fetch(BALANCES_CSV_URL + '&t=' + timestamp);
-                    const balancesCsvText = await balancesResponse.text();
-                    
-                    Papa.parse(balancesCsvText, {
-                        header: true, skipEmptyLines: true,
-                        complete: (res) => {
-                            allBalancesData = res.data;
-                            if (allBalancesData.length > 0) allBalancesData.pop();
+                    }
+                }));
+                
+                fetchPromises.push(quickFetch(BALANCES_CSV_URL).then(async (csvText) => {
+                    if (csvText) {
+                        try {
+                            // معالجة سريعة للبيانات
+                            const rows = csvText.split('\n');
+                            const headers = rows[0] ? rows[0].split(',') : [];
+                            allBalancesData = rows.slice(1, rows.length - 1).map(row => {
+                                const values = row.split(',');
+                                const obj = {};
+                                headers.forEach((header, i) => {
+                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
+                                });
+                                return obj;
+                            }).filter(row => Object.values(row).some(val => val !== ''));
+                            
                             renderBalances();
+                        } catch (e) {
+                            console.warn('خطأ في معالجة بيانات الأرصدة:', e);
                         }
-                    });
-                } catch (e) {
-                    console.error('خطأ في تحميل بيانات الأرصدة:', e);
-                }
-
+                    }
+                }));
+                
+                // انتظار تحميل جميع البيانات
+                await Promise.allSettled(fetchPromises);
+                
             } catch (e) { 
                 console.error('خطأ عام في تحميل البيانات:', e);
+                // لا نعرض رسالة خطأ هنا لتجنب إزعاج المستخدم
             } finally {
-                // إخفاء الloader في جميع الأحوال
+                // تأكيد إخفاء الloader
                 document.getElementById('loader').classList.add('hidden');
                 
                 if (showSyncIndicator) {
                     setTimeout(() => {
                         document.getElementById('syncIndicator').style.display = 'none';
-                    }, 2000);
+                    }, 1000);
                 }
+                
+                // تحديث وقت آخر مزامنة
+                lastUpdateTime = new Date();
             }
         }
 
@@ -1225,9 +1357,9 @@
                 const purchasesUsd = parseFloat(String(row['E'] || row['مشتريات دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
                 const purchasesSyp = parseFloat(String(row['D'] || row['مشتريات سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
                 
-                // الضغوط (G و F)
-                const pressureUsd = parseFloat(String(row['G'] || row['الضغوط دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
-                const pressureSyp = parseFloat(String(row['F'] || row['الضغوط سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                // المدفوع (G و F) - تم التغيير من الضغوط إلى المدفوع
+                const paymentUsd = parseFloat(String(row['G'] || row['المدفوع دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                const paymentSyp = parseFloat(String(row['F'] || row['المدفوع سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
                 
                 // الأرصدة (H و I)
                 const balanceUsd = parseFloat(String(row['H'] || row['الرصيد دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
@@ -1250,8 +1382,8 @@
                     <td class="text-[11px]">${Math.round(salesSyp).toLocaleString()}</td>
                     <td class="text-[11px]">${purchasesUsd.toFixed(2)}</td>
                     <td class="text-[11px]">${Math.round(purchasesSyp).toLocaleString()}</td>
-                    <td class="text-[11px]">${pressureUsd.toFixed(2)}</td>
-                    <td class="text-[11px]">${Math.round(pressureSyp).toLocaleString()}</td>
+                    <td class="text-[11px]">${paymentUsd.toFixed(2)}</td>
+                    <td class="text-[11px]">${Math.round(paymentSyp).toLocaleString()}</td>
                     <td class="font-bold ${balanceUsdClass}">${balanceUsd.toFixed(2)}</td>
                     <td class="font-bold ${balanceSypClass}">${Math.round(balanceSyp).toLocaleString()}</td>
                 `;
@@ -1364,57 +1496,70 @@
 
         // تحميل إعدادات الطباعة من localStorage
         function loadPrintSettings() {
-            const savedSettings = localStorage.getItem('printSettings');
-            if (savedSettings) {
-                printSettings = JSON.parse(savedSettings);
+            try {
+                const savedSettings = localStorage.getItem('printSettings');
+                if (savedSettings) {
+                    printSettings = JSON.parse(savedSettings);
+                }
+            } catch (e) {
+                console.error('خطأ في تحميل إعدادات الطباعة:', e);
+                // استعادة الإعدادات الافتراضية في حالة الخطأ
+                printSettings = {
+                    items: {}, sales: {}, purchases: {}, journal: {}, balances: {}
+                };
             }
         }
 
         // حفظ إعدادات الطباعة إلى localStorage
         function savePrintSettings() {
-            // حفظ إعدادات الأصناف
-            const itemsChecks = document.querySelectorAll('#columnCheckboxes input');
-            itemsChecks.forEach(check => {
-                const colId = check.getAttribute('data-col-ref');
-                printSettings.items[colId] = check.checked;
-            });
+            try {
+                // حفظ إعدادات الأصناف
+                const itemsChecks = document.querySelectorAll('#columnCheckboxes input');
+                itemsChecks.forEach(check => {
+                    const colId = check.getAttribute('data-col-ref');
+                    printSettings.items[colId] = check.checked;
+                });
 
-            // حفظ إعدادات المبيعات
-            const salesChecks = document.querySelectorAll('#salesColumnCheckboxes input');
-            salesChecks.forEach(check => {
-                const colId = check.getAttribute('data-col-ref');
-                printSettings.sales[colId] = check.checked;
-            });
+                // حفظ إعدادات المبيعات
+                const salesChecks = document.querySelectorAll('#salesColumnCheckboxes input');
+                salesChecks.forEach(check => {
+                    const colId = check.getAttribute('data-col-ref');
+                    printSettings.sales[colId] = check.checked;
+                });
 
-            // حفظ إعدادات المشتريات
-            const purchasesChecks = document.querySelectorAll('#purchasesColumnCheckboxes input');
-            purchasesChecks.forEach(check => {
-                const colId = check.getAttribute('data-col-ref');
-                printSettings.purchases[colId] = check.checked;
-            });
+                // حفظ إعدادات المشتريات
+                const purchasesChecks = document.querySelectorAll('#purchasesColumnCheckboxes input');
+                purchasesChecks.forEach(check => {
+                    const colId = check.getAttribute('data-col-ref');
+                    printSettings.purchases[colId] = check.checked;
+                });
 
-            // حفظ إعدادات اليومية
-            const journalChecks = document.querySelectorAll('#journalColumnCheckboxes input');
-            journalChecks.forEach(check => {
-                const colId = check.getAttribute('data-col-ref');
-                printSettings.journal[colId] = check.checked;
-            });
+                // حفظ إعدادات اليومية
+                const journalChecks = document.querySelectorAll('#journalColumnCheckboxes input');
+                journalChecks.forEach(check => {
+                    const colId = check.getAttribute('data-col-ref');
+                    printSettings.journal[colId] = check.checked;
+                });
 
-            // حفظ إعدادات الأرصدة
-            const balancesChecks = document.querySelectorAll('#balancesColumnCheckboxes input');
-            balancesChecks.forEach(check => {
-                const colId = check.getAttribute('data-col-ref');
-                printSettings.balances[colId] = check.checked;
-            });
+                // حفظ إعدادات الأرصدة
+                const balancesChecks = document.querySelectorAll('#balancesColumnCheckboxes input');
+                balancesChecks.forEach(check => {
+                    const colId = check.getAttribute('data-col-ref');
+                    printSettings.balances[colId] = check.checked;
+                });
 
-            // حفظ في localStorage
-            localStorage.setItem('printSettings', JSON.stringify(printSettings));
-            
-            // إخفاء خيارات الطباعة
-            hideAllPrintOptions();
-            
-            // إظهار رسالة تأكيد
-            alert('تم حفظ إعدادات الطباعة بنجاح');
+                // حفظ في localStorage
+                localStorage.setItem('printSettings', JSON.stringify(printSettings));
+                
+                // إخفاء خيارات الطباعة
+                hideAllPrintOptions();
+                
+                // إظهار رسالة تأكيد
+                alert('تم حفظ إعدادات الطباعة بنجاح');
+            } catch (e) {
+                console.error('خطأ في حفظ إعدادات الطباعة:', e);
+                alert('حدث خطأ في حفظ الإعدادات');
+            }
         }
 
         // عرض/إخفاء خيارات الطباعة
