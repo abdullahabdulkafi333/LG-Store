@@ -929,8 +929,8 @@
                 const price = parseFloat(String(row['السعر دولار']).replace(/[^\d.]/g, '')) || 0;
                 const quantity = parseFloat(String(row['الكمية']).replace(/[^\d.]/g, '')) || 0;
                 const totalUsdRow = price * quantity;
-                // استخدام عمود "سوري" (العمود J) لسعر السوري
-                const priceSyp = parseFloat(String(row['سوري']).replace(/[^\d.]/g, '')) || 0;
+                // استخدام عمود "السعر سوري" (العمود J) لسعر السوري
+                const priceSyp = parseFloat(String(row['السعر سوري']).replace(/[^\d.]/g, '')) || 0;
                 // استخدام عمود "ا.سوري" (العمود K) لإجمالي السوري
                 const totalSypRow = parseFloat(String(row['ا.سوري']).replace(/[^\d.]/g, '')) || 0;
                 
@@ -1212,3 +1212,4 @@
     </script>
 </body>
 </html>
+
