@@ -212,6 +212,11 @@
             50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
+        
+        /* زر خيارات الطباعة */
+        .print-settings-btn {
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -249,7 +254,14 @@
                 </div>
                 
                 <div class="controls-section">
-                    <button onclick="togglePrintOptions()" class="bg-blue-500 hover:bg-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-400">طباعة</button>
+                    <div class="print-settings-btn">
+                        <button onclick="togglePrintSettings()" class="bg-blue-500 hover:bg-blue-400 px-2 py-1 rounded text-xs font-bold border border-blue-400 flex items-center gap-1">
+                            <i class="fas fa-print text-[10px]"></i> خيارات الطباعة
+                        </button>
+                    </div>
+                    <button onclick="preparePrint()" class="bg-green-600 hover:bg-green-500 px-2 py-1 rounded text-xs font-bold border border-green-500 flex items-center gap-1">
+                        <i class="fas fa-print text-[10px]"></i> طباعة
+                    </button>
                     <div class="flex items-center gap-2 bg-blue-700/40 p-1.5 rounded-lg border border-blue-400/30">
                         <span class="text-[11px]">سعر الصرف:</span>
                         <input type="number" id="exchangeRate" value="0" class="bg-transparent border-none text-white text-center font-bold text-xs focus:ring-0" style="width: 3.5rem;">
@@ -344,28 +356,40 @@
     <div id="printOptions" class="no-print">
         <p class="font-bold text-xs mb-2">أعمدة الطباعة (الأصناف):</p>
         <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs" id="columnCheckboxes"></div>
-        <button onclick="togglePrintOptions()" class="mt-4 w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ</button>
+        <div class="flex gap-2 mt-4">
+            <button onclick="savePrintSettings()" class="w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ الإعدادات</button>
+            <button onclick="hideAllPrintOptions()" class="w-full bg-gray-300 text-gray-800 py-1.5 rounded text-xs font-bold">إغلاق</button>
+        </div>
     </div>
 
     <!-- خيارات الطباعة للمبيعات -->
     <div id="salesPrintOptions" class="no-print">
         <p class="font-bold text-xs mb-2">أعمدة الطباعة (المبيعات):</p>
         <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs" id="salesColumnCheckboxes"></div>
-        <button onclick="toggleSalesPrintOptions()" class="mt-4 w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ</button>
+        <div class="flex gap-2 mt-4">
+            <button onclick="savePrintSettings()" class="w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ الإعدادات</button>
+            <button onclick="hideAllPrintOptions()" class="w-full bg-gray-300 text-gray-800 py-1.5 rounded text-xs font-bold">إغلاق</button>
+        </div>
     </div>
 
     <!-- خيارات الطباعة للمشتريات -->
     <div id="purchasesPrintOptions" class="no-print">
         <p class="font-bold text-xs mb-2">أعمدة الطباعة (المشتريات):</p>
         <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs" id="purchasesColumnCheckboxes"></div>
-        <button onclick="togglePurchasesPrintOptions()" class="mt-4 w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ</button>
+        <div class="flex gap-2 mt-4">
+            <button onclick="savePrintSettings()" class="w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ الإعدادات</button>
+            <button onclick="hideAllPrintOptions()" class="w-full bg-gray-300 text-gray-800 py-1.5 rounded text-xs font-bold">إغلاق</button>
+        </div>
     </div>
 
     <!-- خيارات الطباعة لليومية -->
     <div id="journalPrintOptions" class="no-print">
         <p class="font-bold text-xs mb-2">أعمدة الطباعة (اليومية):</p>
         <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs" id="journalColumnCheckboxes"></div>
-        <button onclick="toggleJournalPrintOptions()" class="mt-4 w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ</button>
+        <div class="flex gap-2 mt-4">
+            <button onclick="savePrintSettings()" class="w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ الإعدادات</button>
+            <button onclick="hideAllPrintOptions()" class="w-full bg-gray-300 text-gray-800 py-1.5 rounded text-xs font-bold">إغلاق</button>
+        </div>
     </div>
 
     <main class="container mx-auto px-4">
@@ -498,6 +522,14 @@
         let currentTab = 'items';
         let lastUpdateTime = null;
         let syncInterval;
+        
+        // إعدادات الطباعة المحفوظة
+        let printSettings = {
+            items: {},
+            sales: {},
+            purchases: {},
+            journal: {}
+        };
 
         // تعريف الأعمدة لكل تبويب
         const itemsColumns = [
@@ -689,7 +721,7 @@
                 const creditNames = [...new Set(allJournalData.map(row => String(row['دائن'] || '')))];
                 const debitNames = [...new Set(allJournalData.map(row => String(row['مدين'] || '')))];
                 const allNames = [...new Set([...creditNames, ...debitNames])]
-                    .filter(name => name && name.toLowerCase() === val) // مطابقة تامة فقط عند البحث
+                    .filter(name => name && name.toLowerCase().includes(val)) // عرض المطابقة الجزئية
                     .slice(0, 15);
 
                 list.innerHTML = '';
@@ -760,9 +792,9 @@
 
                 const updateList = () => {
                     const val = input.value.toLowerCase();
-                    // عرض جميع القيم عند ترك الحقل فارغاً، وعرض المطابقة التامة عند الكتابة
+                    // عرض المطابقة الجزئية عند الكتابة
                     const uniqueValues = [...new Set(dataArray.map(row => String(row[config.key] || '')))]
-                        .filter(v => v && (val === '' || v.toLowerCase() === val)) // مطابقة تامة فقط عند البحث
+                        .filter(v => v && v.toLowerCase().includes(val)) // مطابقة جزئية
                         .slice(0, 15);
 
                     list.innerHTML = '';
@@ -851,7 +883,8 @@
             if (!e.target.classList.contains('search-input') && 
                 !e.target.classList.contains('sales-search-input') && 
                 !e.target.classList.contains('purchases-search-input') &&
-                !e.target.classList.contains('journal-search-input')) {
+                !e.target.classList.contains('journal-search-input') &&
+                !e.target.classList.contains('suggestion-item')) {
                 hideAllSuggestLists();
             }
         });
@@ -1078,45 +1111,104 @@
 
         // تهيئة خيارات الطباعة
         function initPrintOptions() {
+            // تحميل إعدادات الطباعة المحفوظة
+            loadPrintSettings();
+            
             // خيارات طباعة الأصناف
             const itemsContainer = document.getElementById('columnCheckboxes');
+            itemsContainer.innerHTML = '';
             itemsColumns.forEach(col => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-2 cursor-pointer';
-                label.innerHTML = `<input type="checkbox" checked data-col-ref="${col.id}"> ${col.label}`;
+                const isChecked = printSettings.items[col.id] !== false; // true by default
+                label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} data-col-ref="${col.id}"> ${col.label}`;
                 itemsContainer.appendChild(label);
             });
 
             // خيارات طباعة المبيعات
             const salesContainer = document.getElementById('salesColumnCheckboxes');
+            salesContainer.innerHTML = '';
             salesColumns.forEach(col => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-2 cursor-pointer';
-                label.innerHTML = `<input type="checkbox" checked data-col-ref="${col.id}"> ${col.label}`;
+                const isChecked = printSettings.sales[col.id] !== false; // true by default
+                label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} data-col-ref="${col.id}"> ${col.label}`;
                 salesContainer.appendChild(label);
             });
 
             // خيارات طباعة المشتريات
             const purchasesContainer = document.getElementById('purchasesColumnCheckboxes');
+            purchasesContainer.innerHTML = '';
             purchasesColumns.forEach(col => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-2 cursor-pointer';
-                label.innerHTML = `<input type="checkbox" checked data-col-ref="${col.id}"> ${col.label}`;
+                const isChecked = printSettings.purchases[col.id] !== false; // true by default
+                label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} data-col-ref="${col.id}"> ${col.label}`;
                 purchasesContainer.appendChild(label);
             });
 
             // خيارات طباعة اليومية
             const journalContainer = document.getElementById('journalColumnCheckboxes');
+            journalContainer.innerHTML = '';
             journalColumns.forEach(col => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-2 cursor-pointer';
-                label.innerHTML = `<input type="checkbox" checked data-col-ref="${col.id}"> ${col.label}`;
+                const isChecked = printSettings.journal[col.id] !== false; // true by default
+                label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} data-col-ref="${col.id}"> ${col.label}`;
                 journalContainer.appendChild(label);
             });
         }
 
+        // تحميل إعدادات الطباعة من localStorage
+        function loadPrintSettings() {
+            const savedSettings = localStorage.getItem('printSettings');
+            if (savedSettings) {
+                printSettings = JSON.parse(savedSettings);
+            }
+        }
+
+        // حفظ إعدادات الطباعة إلى localStorage
+        function savePrintSettings() {
+            // حفظ إعدادات الأصناف
+            const itemsChecks = document.querySelectorAll('#columnCheckboxes input');
+            itemsChecks.forEach(check => {
+                const colId = check.getAttribute('data-col-ref');
+                printSettings.items[colId] = check.checked;
+            });
+
+            // حفظ إعدادات المبيعات
+            const salesChecks = document.querySelectorAll('#salesColumnCheckboxes input');
+            salesChecks.forEach(check => {
+                const colId = check.getAttribute('data-col-ref');
+                printSettings.sales[colId] = check.checked;
+            });
+
+            // حفظ إعدادات المشتريات
+            const purchasesChecks = document.querySelectorAll('#purchasesColumnCheckboxes input');
+            purchasesChecks.forEach(check => {
+                const colId = check.getAttribute('data-col-ref');
+                printSettings.purchases[colId] = check.checked;
+            });
+
+            // حفظ إعدادات اليومية
+            const journalChecks = document.querySelectorAll('#journalColumnCheckboxes input');
+            journalChecks.forEach(check => {
+                const colId = check.getAttribute('data-col-ref');
+                printSettings.journal[colId] = check.checked;
+            });
+
+            // حفظ في localStorage
+            localStorage.setItem('printSettings', JSON.stringify(printSettings));
+            
+            // إخفاء خيارات الطباعة
+            hideAllPrintOptions();
+            
+            // إظهار رسالة تأكيد
+            alert('تم حفظ إعدادات الطباعة بنجاح');
+        }
+
         // عرض/إخفاء خيارات الطباعة
-        function togglePrintOptions() {
+        function togglePrintSettings() {
             const tabOptions = {
                 'items': 'printOptions',
                 'sales': 'salesPrintOptions',
@@ -1125,24 +1217,6 @@
             };
             
             const div = document.getElementById(tabOptions[currentTab]);
-            hideAllPrintOptions();
-            div.style.display = div.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function toggleSalesPrintOptions() {
-            const div = document.getElementById('salesPrintOptions');
-            hideAllPrintOptions();
-            div.style.display = div.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function togglePurchasesPrintOptions() {
-            const div = document.getElementById('purchasesPrintOptions');
-            hideAllPrintOptions();
-            div.style.display = div.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function toggleJournalPrintOptions() {
-            const div = document.getElementById('journalPrintOptions');
             hideAllPrintOptions();
             div.style.display = div.style.display === 'block' ? 'none' : 'block';
         }
@@ -1166,30 +1240,38 @@
             };
             
             const config = tabConfigs[currentTab];
-            checks = document.querySelectorAll(config.checks);
-            colSelector = config.selector;
+            
+            // استخدام الإعدادات المحفوظة للتحقق
+            const currentSettings = printSettings[currentTab];
             
             // إخفاء جميع الأعمدة أولاً
-            document.querySelectorAll(`${colSelector} th, ${colSelector} td`).forEach(el => {
+            document.querySelectorAll(`${config.selector} th, ${config.selector} td`).forEach(el => {
                 el.classList.remove('print-hidden');
             });
             
-            // إخفاء الأعمدة غير المحددة
-            checks.forEach(check => {
-                if (!check.checked) {
-                    const colId = check.getAttribute('data-col-ref');
-                    const th = document.querySelector(`${colSelector} th[data-col="${colId}"]`);
+            // إخفاء الأعمدة غير المحددة في الإعدادات المحفوظة
+            Object.keys(currentSettings).forEach(colId => {
+                if (!currentSettings[colId]) {
+                    const th = document.querySelector(`${config.selector} th[data-col="${colId}"]`);
                     if (th) {
                         const colIndex = Array.from(th.parentNode.children).indexOf(th) + 1;
                         th.classList.add('print-hidden');
-                        document.querySelectorAll(`${colSelector} tbody tr td:nth-child(${colIndex})`).forEach(td => {
+                        document.querySelectorAll(`${config.selector} tbody tr td:nth-child(${colIndex})`).forEach(td => {
                             td.classList.add('print-hidden');
                         });
                     }
                 }
             });
             
+            // تنفيذ الطباعة
             window.print();
+            
+            // إعادة عرض جميع الأعمدة بعد الطباعة
+            setTimeout(() => {
+                document.querySelectorAll(`${config.selector} th, ${config.selector} td`).forEach(el => {
+                    el.classList.remove('print-hidden');
+                });
+            }, 100);
         }
 
         // إضافة مستمعات الأحداث
@@ -1212,4 +1294,3 @@
     </script>
 </body>
 </html>
-
