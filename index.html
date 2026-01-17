@@ -656,92 +656,105 @@
                 
                 const timestamp = Date.now();
                 
-                // تحميل بيانات الأصناف
-                const itemsResponse = await fetch(ITEMS_CSV_URL + '&t=' + timestamp);
-                const itemsCsvText = await itemsResponse.text();
-                
-                Papa.parse(itemsCsvText.split('\n').slice(1).join('\n'), {
-                    header: true, skipEmptyLines: true,
-                    complete: (res) => {
-                        allItemsData = res.data;
-                        if (allItemsData.length > 0) allItemsData.pop();
-                        renderItems();
-                        setupItemsDropdowns();
-                    }
-                });
+                // تحميل بيانات الأصناف (مع الحفاظ على الشكل القديم للأصناف فقط)
+                try {
+                    const itemsResponse = await fetch(ITEMS_CSV_URL + '&t=' + timestamp);
+                    const itemsCsvText = await itemsResponse.text();
+                    
+                    Papa.parse(itemsCsvText.split('\n').slice(1).join('\n'), {
+                        header: true, skipEmptyLines: true,
+                        complete: (res) => {
+                            allItemsData = res.data;
+                            if (allItemsData.length > 0) allItemsData.pop();
+                            renderItems();
+                            setupItemsDropdowns();
+                        }
+                    });
+                } catch (e) {
+                    console.error('خطأ في تحميل بيانات الأصناف:', e);
+                }
 
-                // تحميل بيانات المبيعات
-                const salesResponse = await fetch(SALES_CSV_URL + '&t=' + timestamp);
-                const salesCsvText = await salesResponse.text();
-                
-                Papa.parse(salesCsvText, {
-                    header: true, skipEmptyLines: true,
-                    complete: (res) => {
-                        allSalesData = res.data;
-                        if (allSalesData.length > 0) allSalesData.pop();
-                        renderSales();
-                        setupSalesDropdowns();
-                    }
-                });
+                // تحميل بيانات المبيعات (بدون إزالة السطر الأول)
+                try {
+                    const salesResponse = await fetch(SALES_CSV_URL + '&t=' + timestamp);
+                    const salesCsvText = await salesResponse.text();
+                    
+                    Papa.parse(salesCsvText, {
+                        header: true, skipEmptyLines: true,
+                        complete: (res) => {
+                            allSalesData = res.data;
+                            if (allSalesData.length > 0) allSalesData.pop();
+                            renderSales();
+                            setupSalesDropdowns();
+                        }
+                    });
+                } catch (e) {
+                    console.error('خطأ في تحميل بيانات المبيعات:', e);
+                }
 
-                // تحميل بيانات المشتريات
-                const purchasesResponse = await fetch(PURCHASES_CSV_URL + '&t=' + timestamp);
-                const purchasesCsvText = await purchasesResponse.text();
-                
-                Papa.parse(purchasesCsvText, {
-                    header: true, skipEmptyLines: true,
-                    complete: (res) => {
-                        allPurchasesData = res.data;
-                        if (allPurchasesData.length > 0) allPurchasesData.pop();
-                        renderPurchases();
-                        setupPurchasesDropdowns();
-                    }
-                });
+                // تحميل بيانات المشتريات (بدون إزالة السطر الأول)
+                try {
+                    const purchasesResponse = await fetch(PURCHASES_CSV_URL + '&t=' + timestamp);
+                    const purchasesCsvText = await purchasesResponse.text();
+                    
+                    Papa.parse(purchasesCsvText, {
+                        header: true, skipEmptyLines: true,
+                        complete: (res) => {
+                            allPurchasesData = res.data;
+                            if (allPurchasesData.length > 0) allPurchasesData.pop();
+                            renderPurchases();
+                            setupPurchasesDropdowns();
+                        }
+                    });
+                } catch (e) {
+                    console.error('خطأ في تحميل بيانات المشتريات:', e);
+                }
 
-                // تحميل بيانات اليومية
-                const journalResponse = await fetch(JOURNAL_CSV_URL + '&t=' + timestamp);
-                const journalCsvText = await journalResponse.text();
-                
-                Papa.parse(journalCsvText, {
-                    header: true, skipEmptyLines: true,
-                    complete: (res) => {
-                        allJournalData = res.data;
-                        if (allJournalData.length > 0) allJournalData.pop();
-                        renderJournal();
-                        setupJournalDropdowns();
-                    }
-                });
+                // تحميل بيانات اليومية (بدون إزالة السطر الأول)
+                try {
+                    const journalResponse = await fetch(JOURNAL_CSV_URL + '&t=' + timestamp);
+                    const journalCsvText = await journalResponse.text();
+                    
+                    Papa.parse(journalCsvText, {
+                        header: true, skipEmptyLines: true,
+                        complete: (res) => {
+                            allJournalData = res.data;
+                            if (allJournalData.length > 0) allJournalData.pop();
+                            renderJournal();
+                            setupJournalDropdowns();
+                        }
+                    });
+                } catch (e) {
+                    console.error('خطأ في تحميل بيانات اليومية:', e);
+                }
 
                 // تحميل بيانات الأرصدة
-                const balancesResponse = await fetch(BALANCES_CSV_URL + '&t=' + timestamp);
-                const balancesCsvText = await balancesResponse.text();
-                
-                Papa.parse(balancesCsvText, {
-                    header: true, skipEmptyLines: true,
-                    complete: (res) => {
-                        allBalancesData = res.data;
-                        if (allBalancesData.length > 0) allBalancesData.pop();
-                        renderBalances();
-                        
-                        // إخفاء الloader بعد تحميل كل البيانات
-                        document.getElementById('loader').classList.add('hidden');
-                        
-                        // تحديث وقت آخر مزامنة
-                        lastUpdateTime = new Date();
-                        
-                        if (showSyncIndicator) {
-                            setTimeout(() => {
-                                document.getElementById('syncIndicator').style.display = 'none';
-                            }, 2000);
+                try {
+                    const balancesResponse = await fetch(BALANCES_CSV_URL + '&t=' + timestamp);
+                    const balancesCsvText = await balancesResponse.text();
+                    
+                    Papa.parse(balancesCsvText, {
+                        header: true, skipEmptyLines: true,
+                        complete: (res) => {
+                            allBalancesData = res.data;
+                            if (allBalancesData.length > 0) allBalancesData.pop();
+                            renderBalances();
                         }
-                    }
-                });
+                    });
+                } catch (e) {
+                    console.error('خطأ في تحميل بيانات الأرصدة:', e);
+                }
 
             } catch (e) { 
-                console.error('خطأ في تحميل البيانات:', e);
+                console.error('خطأ عام في تحميل البيانات:', e);
+            } finally {
+                // إخفاء الloader في جميع الأحوال
                 document.getElementById('loader').classList.add('hidden');
+                
                 if (showSyncIndicator) {
-                    document.getElementById('syncIndicator').style.display = 'none';
+                    setTimeout(() => {
+                        document.getElementById('syncIndicator').style.display = 'none';
+                    }, 2000);
                 }
             }
         }
@@ -1495,4 +1508,3 @@
     </script>
 </body>
 </html>
-
