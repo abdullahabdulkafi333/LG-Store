@@ -622,7 +622,7 @@
     </main>
 
     <script>
-        // روابط البيانات مع إضافة timeout أقل لتحميل أسرع
+        // روابط البيانات
         const ITEMS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=313186314&single=true&output=csv';
         const SALES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=1169303046&single=true&output=csv';
         const PURCHASES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=1461133672&single=true&output=csv';
@@ -713,7 +713,7 @@
             fetchAllData();
         }
 
-        // تحميل سريع للبيانات مع timeout أقل
+        // تحميل جميع البيانات
         async function fetchAllData(showSyncIndicator = false) {
             try {
                 if (showSyncIndicator) {
@@ -722,160 +722,79 @@
                 
                 const timestamp = Date.now();
                 
-                // إخفاء الـ loader بسرعة أكبر
+                // إخفاء الـ loader بسرعة
                 setTimeout(() => {
                     document.getElementById('loader').classList.add('hidden');
                 }, 300);
                 
-                // تحميل البيانات بسرعة - استخدام Promise.all لتسريع التحميل
-                const fetchPromises = [];
-                
-                // دالة سريعة لتحميل البيانات
-                const quickFetch = async (url) => {
+                // استخدام Papa.parse لتحميل جميع البيانات بشكل صحيح
+                const loadWithPapaParse = async (url, callback) => {
                     try {
-                        const controller = new AbortController();
-                        const timeout = setTimeout(() => controller.abort(), 5000); // 5 ثواني بدلاً من 10
-                        
                         const response = await fetch(url + '&t=' + timestamp, {
-                            signal: controller.signal,
                             mode: 'cors',
                             cache: 'no-cache'
                         });
-                        
-                        clearTimeout(timeout);
                         
                         if (!response.ok) {
                             throw new Error(`HTTP ${response.status}`);
                         }
                         
-                        return await response.text();
+                        const csvText = await response.text();
+                        
+                        Papa.parse(csvText, {
+                            header: true,
+                            skipEmptyLines: true,
+                            complete: (results) => {
+                                callback(results.data);
+                            },
+                            error: (error) => {
+                                console.warn('خطأ في parsing:', error);
+                                callback([]);
+                            }
+                        });
                     } catch (error) {
-                        console.warn('تحذير في تحميل البيانات:', error.message);
-                        return ''; // إرجاع سلسلة فارغة بدلاً من رمي خطأ
+                        console.warn('خطأ في تحميل البيانات:', error.message);
+                        callback([]);
                     }
                 };
-                
-                // البدء في تحميل جميع البيانات بالتوازي
-                fetchPromises.push(quickFetch(ITEMS_CSV_URL).then(async (csvText) => {
-                    if (csvText) {
-                        try {
-                            // معالجة سريعة للبيانات
-                            const rows = csvText.split('\n');
-                            const headers = rows[1] ? rows[1].split(',') : [];
-                            allItemsData = rows.slice(2, rows.length - 1).map(row => {
-                                const values = row.split(',');
-                                const obj = {};
-                                headers.forEach((header, i) => {
-                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
-                                });
-                                return obj;
-                            }).filter(row => Object.values(row).some(val => val !== ''));
-                            
-                            renderItems();
-                            setupItemsDropdowns();
-                        } catch (e) {
-                            console.warn('خطأ في معالجة بيانات الأصناف:', e);
-                        }
-                    }
-                }));
-                
-                fetchPromises.push(quickFetch(SALES_CSV_URL).then(async (csvText) => {
-                    if (csvText) {
-                        try {
-                            // معالجة سريعة للبيانات
-                            const rows = csvText.split('\n');
-                            const headers = rows[0] ? rows[0].split(',') : [];
-                            allSalesData = rows.slice(1, rows.length - 1).map(row => {
-                                const values = row.split(',');
-                                const obj = {};
-                                headers.forEach((header, i) => {
-                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
-                                });
-                                return obj;
-                            }).filter(row => Object.values(row).some(val => val !== ''));
-                            
-                            renderSales();
-                            setupSalesDropdowns();
-                        } catch (e) {
-                            console.warn('خطأ في معالجة بيانات المبيعات:', e);
-                        }
-                    }
-                }));
-                
-                fetchPromises.push(quickFetch(PURCHASES_CSV_URL).then(async (csvText) => {
-                    if (csvText) {
-                        try {
-                            // معالجة سريعة للبيانات
-                            const rows = csvText.split('\n');
-                            const headers = rows[0] ? rows[0].split(',') : [];
-                            allPurchasesData = rows.slice(1, rows.length - 1).map(row => {
-                                const values = row.split(',');
-                                const obj = {};
-                                headers.forEach((header, i) => {
-                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
-                                });
-                                return obj;
-                            }).filter(row => Object.values(row).some(val => val !== ''));
-                            
-                            renderPurchases();
-                            setupPurchasesDropdowns();
-                        } catch (e) {
-                            console.warn('خطأ في معالجة بيانات المشتريات:', e);
-                        }
-                    }
-                }));
-                
-                fetchPromises.push(quickFetch(JOURNAL_CSV_URL).then(async (csvText) => {
-                    if (csvText) {
-                        try {
-                            // معالجة سريعة للبيانات
-                            const rows = csvText.split('\n');
-                            const headers = rows[0] ? rows[0].split(',') : [];
-                            allJournalData = rows.slice(1, rows.length - 1).map(row => {
-                                const values = row.split(',');
-                                const obj = {};
-                                headers.forEach((header, i) => {
-                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
-                                });
-                                return obj;
-                            }).filter(row => Object.values(row).some(val => val !== ''));
-                            
-                            renderJournal();
-                            setupJournalDropdowns();
-                        } catch (e) {
-                            console.warn('خطأ في معالجة بيانات اليومية:', e);
-                        }
-                    }
-                }));
-                
-                fetchPromises.push(quickFetch(BALANCES_CSV_URL).then(async (csvText) => {
-                    if (csvText) {
-                        try {
-                            // معالجة سريعة للبيانات
-                            const rows = csvText.split('\n');
-                            const headers = rows[0] ? rows[0].split(',') : [];
-                            allBalancesData = rows.slice(1, rows.length - 1).map(row => {
-                                const values = row.split(',');
-                                const obj = {};
-                                headers.forEach((header, i) => {
-                                    obj[header.trim()] = values[i] ? values[i].trim() : '';
-                                });
-                                return obj;
-                            }).filter(row => Object.values(row).some(val => val !== ''));
-                            
-                            renderBalances();
-                        } catch (e) {
-                            console.warn('خطأ في معالجة بيانات الأرصدة:', e);
-                        }
-                    }
-                }));
-                
-                // انتظار تحميل جميع البيانات
-                await Promise.allSettled(fetchPromises);
-                
+
+                // تحميل بيانات الأصناف
+                await loadWithPapaParse(ITEMS_CSV_URL, (data) => {
+                    allItemsData = data.filter(row => Object.values(row).some(val => val !== ''));
+                    renderItems();
+                    setupItemsDropdowns();
+                });
+
+                // تحميل بيانات المبيعات
+                await loadWithPapaParse(SALES_CSV_URL, (data) => {
+                    allSalesData = data.filter(row => Object.values(row).some(val => val !== ''));
+                    renderSales();
+                    setupSalesDropdowns();
+                });
+
+                // تحميل بيانات المشتريات
+                await loadWithPapaParse(PURCHASES_CSV_URL, (data) => {
+                    allPurchasesData = data.filter(row => Object.values(row).some(val => val !== ''));
+                    renderPurchases();
+                    setupPurchasesDropdowns();
+                });
+
+                // تحميل بيانات اليومية
+                await loadWithPapaParse(JOURNAL_CSV_URL, (data) => {
+                    allJournalData = data.filter(row => Object.values(row).some(val => val !== ''));
+                    renderJournal();
+                    setupJournalDropdowns();
+                });
+
+                // تحميل بيانات الأرصدة - الأهم
+                await loadWithPapaParse(BALANCES_CSV_URL, (data) => {
+                    allBalancesData = data.filter(row => Object.values(row).some(val => val !== ''));
+                    console.log('بيانات الأرصدة المحملة:', allBalancesData); // للتصحيح
+                    renderBalances();
+                });
+
             } catch (e) { 
                 console.error('خطأ عام في تحميل البيانات:', e);
-                // لا نعرض رسالة خطأ هنا لتجنب إزعاج المستخدم
             } finally {
                 // تأكيد إخفاء الloader
                 document.getElementById('loader').classList.add('hidden');
@@ -1325,17 +1244,31 @@
             });
         }
 
-        // عرض بيانات الأرصدة
+        // عرض بيانات الأرصدة - الإصلاح الرئيسي هنا
         function renderBalances() {
             const tbody = document.getElementById('balancesTableBody');
             
             tbody.innerHTML = '';
             
-            // تصفية البيانات حسب الشرط: فقط الصفوف التي فيها رصيد دولار (H) أو رصيد سوري (I) لا يساوي الصفر
+            // تحقق من وجود بيانات
+            if (allBalancesData.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="10" class="text-center py-4 text-gray-500">لا توجد بيانات للعرض</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+            
+            // عرض أول صفين من البيانات للتصحيح
+            console.log('عينة من بيانات الأرصدة:');
+            allBalancesData.slice(0, 2).forEach((row, i) => {
+                console.log(`الصف ${i}:`, row);
+            });
+            
+            // تصفية البيانات حسب الشرط: فقط الصفوف التي فيها رصيد دولار أو رصيد سوري لا يساوي الصفر
             const filteredData = allBalancesData.filter(row => {
-                // الحصول على قيم الأعمدة H و I
-                const balanceUsd = parseFloat(String(row['الرصيد دولار'] || row['H'] || '0').replace(/[^\d.-]/g, '')) || 0;
-                const balanceSyp = parseFloat(String(row['الرصيد سوري'] || row['I'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                // استخدام أسماء الأعمدة الفعلية من CSV
+                const balanceUsd = parseFloat(String(row['الرصيد دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                const balanceSyp = parseFloat(String(row['الرصيد سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
                 
                 // إرجاع صحيح إذا كان أي من القيمتين لا تساوي الصفر
                 return balanceUsd !== 0 || balanceSyp !== 0;
@@ -1346,24 +1279,24 @@
             let rowCount = 0;
             
             filteredData.forEach((row, i) => {
-                // استخراج البيانات من الصفوف حسب هيكل الجدول في الصورة
-                const account = row['A'] || row['الحساب'] || '';
+                // استخراج البيانات من الصفوف باستخدام أسماء الأعمدة الصحيحة
+                const account = row['الحساب'] || '';
                 
-                // المبيعات (C و B)
-                const salesUsd = parseFloat(String(row['C'] || row['مبيعات دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
-                const salesSyp = parseFloat(String(row['B'] || row['مبيعات سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                // المبيعات دولار وسوري - استخدام الأسماء العربية الصحيحة
+                const salesUsd = parseFloat(String(row['مبيعات دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                const salesSyp = parseFloat(String(row['مبيعات سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
                 
-                // المشتريات (E و D)
-                const purchasesUsd = parseFloat(String(row['E'] || row['مشتريات دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
-                const purchasesSyp = parseFloat(String(row['D'] || row['مشتريات سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                // المشتريات دولار وسوري
+                const purchasesUsd = parseFloat(String(row['مشتريات دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                const purchasesSyp = parseFloat(String(row['مشتريات سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
                 
-                // المدفوع (G و F) - تم التغيير من الضغوط إلى المدفوع
-                const paymentUsd = parseFloat(String(row['G'] || row['المدفوع دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
-                const paymentSyp = parseFloat(String(row['F'] || row['المدفوع سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                // المدفوع دولار وسوري (تم التغيير من الضغوط)
+                const paymentUsd = parseFloat(String(row['الضغوط دولار'] || row['المدفوع دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                const paymentSyp = parseFloat(String(row['الضغوط سوري'] || row['المدفوع سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
                 
-                // الأرصدة (H و I)
-                const balanceUsd = parseFloat(String(row['H'] || row['الرصيد دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
-                const balanceSyp = parseFloat(String(row['I'] || row['الرصيد سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                // الأرصدة دولار وسوري
+                const balanceUsd = parseFloat(String(row['الرصيد دولار'] || '0').replace(/[^\d.-]/g, '')) || 0;
+                const balanceSyp = parseFloat(String(row['الرصيد سوري'] || '0').replace(/[^\d.-]/g, '')) || 0;
                 
                 // جمع الإجماليات
                 totalUsd += balanceUsd;
@@ -1389,6 +1322,12 @@
                 `;
                 tbody.appendChild(tr);
             });
+            
+            if (rowCount === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="10" class="text-center py-4 text-gray-500">لا توجد أرصدة غير صفرية للعرض</td>`;
+                tbody.appendChild(tr);
+            }
             
             // تحديث الإجماليات
             document.getElementById('balancesTotalUsd').textContent = `${totalUsd.toFixed(2)} $`;
