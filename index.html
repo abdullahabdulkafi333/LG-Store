@@ -113,7 +113,7 @@
             .tab-content.active { display: block !important; }
         }
 
-        #printOptions, #salesPrintOptions, #purchasesPrintOptions, #journalPrintOptions {
+        #printOptions, #salesPrintOptions, #purchasesPrintOptions, #journalPrintOptions, #balancesPrintOptions {
             display: none;
             position: absolute;
             top: 70px; left: 20px;
@@ -217,6 +217,38 @@
         .print-settings-btn {
             position: relative;
         }
+        
+        /* تنسيق خاص للأرصدة - خلفية بيضاء فقط */
+        .positive-balance {
+            color: #059669 !important;
+            font-weight: 700;
+        }
+        
+        .negative-balance {
+            color: #dc2626 !important;
+            font-weight: 700;
+        }
+        
+        /* تخصيص ألوان الأرصدة بدون خلفية */
+        .balance-usd-positive {
+            color: #059669 !important;
+            font-weight: 700;
+        }
+        
+        .balance-usd-negative {
+            color: #dc2626 !important;
+            font-weight: 700;
+        }
+        
+        .balance-syp-positive {
+            color: #059669 !important;
+            font-weight: 700;
+        }
+        
+        .balance-syp-negative {
+            color: #dc2626 !important;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -250,6 +282,9 @@
                     </button>
                     <button onclick="switchTab('journal')" class="tab-button bg-blue-500 hover:bg-blue-400 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
                         <i class="fas fa-book text-[10px]"></i> اليومية
+                    </button>
+                    <button onclick="switchTab('balances')" class="tab-button bg-blue-500 hover:bg-blue-400 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
+                        <i class="fas fa-balance-scale text-[10px]"></i> الأرصدة
                     </button>
                 </div>
                 
@@ -349,6 +384,17 @@
                     <div class="col-span-2"></div>
                 </div>
             </div>
+
+            <!-- بحث الأرصدة -->
+            <div id="balancesSearch" class="tab-content">
+                <div class="grid grid-cols-4 gap-3 pb-2">
+                    <div class="search-wrapper">
+                        <input type="text" id="searchBalancesAccount" placeholder="الحساب" class="input-glass balances-search-input" autocomplete="off">
+                        <div id="suggestBalancesAccount" class="suggestions-list"></div>
+                    </div>
+                    <div class="col-span-3"></div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -386,6 +432,16 @@
     <div id="journalPrintOptions" class="no-print">
         <p class="font-bold text-xs mb-2">أعمدة الطباعة (اليومية):</p>
         <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs" id="journalColumnCheckboxes"></div>
+        <div class="flex gap-2 mt-4">
+            <button onclick="savePrintSettings()" class="w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ الإعدادات</button>
+            <button onclick="hideAllPrintOptions()" class="w-full bg-gray-300 text-gray-800 py-1.5 rounded text-xs font-bold">إغلاق</button>
+        </div>
+    </div>
+
+    <!-- خيارات الطباعة للأرصدة -->
+    <div id="balancesPrintOptions" class="no-print">
+        <p class="font-bold text-xs mb-2">أعمدة الطباعة (الأرصدة):</p>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs" id="balancesColumnCheckboxes"></div>
         <div class="flex gap-2 mt-4">
             <button onclick="savePrintSettings()" class="w-full bg-blue-600 text-white py-1.5 rounded text-xs font-bold">حفظ الإعدادات</button>
             <button onclick="hideAllPrintOptions()" class="w-full bg-gray-300 text-gray-800 py-1.5 rounded text-xs font-bold">إغلاق</button>
@@ -505,6 +561,43 @@
                 </table>
             </div>
         </div>
+
+        <!-- جدول الأرصدة -->
+        <div id="balancesTable" class="tab-content">
+            <!-- إجماليات الأرصدة -->
+            <div class="totals-container mb-3 no-print">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="total-card usd-total">
+                        <div class="text-[11px] text-gray-600">إجمالي الدولار</div>
+                        <div class="text-sm" id="balancesTotalUsd">0.00 $</div>
+                    </div>
+                    <div class="total-card syp-total">
+                        <div class="text-[11px] text-gray-600">إجمالي السوري</div>
+                        <div class="text-sm" id="balancesTotalSyp">0 ل.س</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="balancesTableContent">
+                    <thead>
+                        <tr>
+                            <th data-col="index" class="w-12">#</th>
+                            <th data-col="account">الحساب</th>
+                            <th data-col="sales_usd">مبيعات دولار</th>
+                            <th data-col="sales_syp">مبيعات سوري</th>
+                            <th data-col="purchases_usd">مشتريات دولار</th>
+                            <th data-col="purchases_syp">مشتريات سوري</th>
+                            <th data-col="debit_usd">الضغوط دولار</th>
+                            <th data-col="debit_syp">الضغوط سوري</th>
+                            <th data-col="balance_usd">الرصيد دولار</th>
+                            <th data-col="balance_syp">الرصيد سوري</th>
+                        </tr>
+                    </thead>
+                    <tbody id="balancesTableBody"></tbody>
+                </table>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -513,12 +606,14 @@
         const SALES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=1169303046&single=true&output=csv';
         const PURCHASES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=1461133672&single=true&output=csv';
         const JOURNAL_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=209051289&single=true&output=csv';
+        const BALANCES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZgBZaf8J75UuFGvmdPbl95jnO9kfoVzKM2vULW4QhfDWEpAVp0uZ4hO4O3GgK20v2Y35UcW8nNnLW/pub?gid=1938588271&single=true&output=csv';
 
         // بيانات عامة
         let allItemsData = [];
         let allSalesData = [];
         let allPurchasesData = [];
         let allJournalData = [];
+        let allBalancesData = [];
         let currentTab = 'items';
         let lastUpdateTime = null;
         let syncInterval;
@@ -528,7 +623,8 @@
             items: {},
             sales: {},
             purchases: {},
-            journal: {}
+            journal: {},
+            balances: {}
         };
         
         // متغيرات للتحكم في القوائم المنسدلة
@@ -564,6 +660,19 @@
             {id:'description',label:'البيان'}
         ];
 
+        const balancesColumns = [
+            {id:'index',label:'#'},
+            {id:'account',label:'الحساب'},
+            {id:'sales_usd',label:'مبيعات دولار'},
+            {id:'sales_syp',label:'مبيعات سوري'},
+            {id:'purchases_usd',label:'مشتريات دولار'},
+            {id:'purchases_syp',label:'مشتريات سوري'},
+            {id:'debit_usd',label:'الضغوط دولار'},
+            {id:'debit_syp',label:'الضغوط سوري'},
+            {id:'balance_usd',label:'الرصيد دولار'},
+            {id:'balance_syp',label:'الرصيد سوري'}
+        ];
+
         // تحميل جميع البيانات
         async function fetchAllData(showSyncIndicator = false) {
             try {
@@ -573,7 +682,7 @@
                 
                 const timestamp = Date.now();
                 
-                // تحميل بيانات الأصناف (مع الحفاظ على الشكل القديم للأصناف فقط)
+                // تحميل بيانات الأصناف
                 const itemsResponse = await fetch(ITEMS_CSV_URL + '&t=' + timestamp);
                 const itemsCsvText = await itemsResponse.text();
                 
@@ -587,11 +696,11 @@
                     }
                 });
 
-                // تحميل بيانات المبيعات (بدون إزالة السطر الأول)
+                // تحميل بيانات المبيعات
                 const salesResponse = await fetch(SALES_CSV_URL + '&t=' + timestamp);
                 const salesCsvText = await salesResponse.text();
                 
-                Papa.parse(salesCsvText, {  // تم إزالة split('\n').slice(1)
+                Papa.parse(salesCsvText, {
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allSalesData = res.data;
@@ -601,11 +710,11 @@
                     }
                 });
 
-                // تحميل بيانات المشتريات (بدون إزالة السطر الأول)
+                // تحميل بيانات المشتريات
                 const purchasesResponse = await fetch(PURCHASES_CSV_URL + '&t=' + timestamp);
                 const purchasesCsvText = await purchasesResponse.text();
                 
-                Papa.parse(purchasesCsvText, {  // تم إزالة split('\n').slice(1)
+                Papa.parse(purchasesCsvText, {
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allPurchasesData = res.data;
@@ -615,17 +724,31 @@
                     }
                 });
 
-                // تحميل بيانات اليومية (بدون إزالة السطر الأول)
+                // تحميل بيانات اليومية
                 const journalResponse = await fetch(JOURNAL_CSV_URL + '&t=' + timestamp);
                 const journalCsvText = await journalResponse.text();
                 
-                Papa.parse(journalCsvText, {  // تم إزالة split('\n').slice(1)
+                Papa.parse(journalCsvText, {
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allJournalData = res.data;
                         if (allJournalData.length > 0) allJournalData.pop();
                         renderJournal();
                         setupJournalDropdowns();
+                    }
+                });
+
+                // تحميل بيانات الأرصدة
+                const balancesResponse = await fetch(BALANCES_CSV_URL + '&t=' + timestamp);
+                const balancesCsvText = await balancesResponse.text();
+                
+                Papa.parse(balancesCsvText, {
+                    header: true, skipEmptyLines: true,
+                    complete: (res) => {
+                        allBalancesData = res.data;
+                        if (allBalancesData.length > 0) allBalancesData.pop();
+                        renderBalances();
+                        setupBalancesDropdowns();
                         
                         // إخفاء الloader بعد تحميل كل البيانات
                         document.getElementById('loader').classList.add('hidden');
@@ -656,7 +779,7 @@
             indicator.style.display = 'block';
         }
 
-        // بدء مزامنة تلقائية كل 3 دقائق
+        // بدء مزامنة تلقائية كل 15 ثانية
         function startAutoSync() {
             if (syncInterval) {
                 clearInterval(syncInterval);
@@ -664,7 +787,7 @@
             
             syncInterval = setInterval(() => {
                 fetchAllData(true);
-            }, 3 * 60 * 1000); // 3 دقائق
+            }, 15 * 1000); // 15 ثانية بدلاً من 3 دقائق
         }
 
         // إعداد القوائم المنسدلة للأصناف
@@ -722,7 +845,7 @@
                 const creditNames = [...new Set(allJournalData.map(row => String(row['دائن'] || '')))];
                 const debitNames = [...new Set(allJournalData.map(row => String(row['مدين'] || '')))];
                 const allNames = [...new Set([...creditNames, ...debitNames])]
-                    .filter(name => name && name.toLowerCase().includes(val)) // عرض المطابقة الجزئية
+                    .filter(name => name && name.toLowerCase().includes(val))
                     .slice(0, 15);
 
                 list.innerHTML = '';
@@ -777,7 +900,79 @@
                     if (currentFocusIndex >= 0 && currentSuggestItems[currentFocusIndex]) {
                         currentSuggestItems[currentFocusIndex].click();
                     } else if (currentSuggestItems.length > 0 && currentSuggestItems[0]) {
-                        // إذا لم يكن هناك عنصر محدد، اختر الأول
+                        currentSuggestItems[0].click();
+                    }
+                } else if (e.key === 'Escape') {
+                    hideAllSuggestLists();
+                }
+            };
+        }
+
+        // إعداد القوائم المنسدلة للأرصدة
+        function setupBalancesDropdowns() {
+            const input = document.getElementById('searchBalancesAccount');
+            const list = document.getElementById('suggestBalancesAccount');
+
+            const updateList = () => {
+                const val = input.value.toLowerCase();
+                
+                // جمع أسماء الحسابات الفريدة
+                const accountNames = [...new Set(allBalancesData.map(row => String(row['الحساب'] || '')))]
+                    .filter(name => name && name.toLowerCase().includes(val))
+                    .slice(0, 15);
+
+                list.innerHTML = '';
+                currentSuggestItems = [];
+                
+                if (accountNames.length > 0) {
+                    accountNames.forEach(name => {
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        div.textContent = name;
+                        div.onclick = () => {
+                            input.value = name;
+                            hideAllSuggestLists();
+                            renderBalances();
+                        };
+                        list.appendChild(div);
+                        currentSuggestItems.push(div);
+                    });
+                    list.style.display = 'block';
+                    currentFocusIndex = -1;
+                } else {
+                    list.style.display = 'none';
+                    currentFocusIndex = -1;
+                    currentSuggestItems = [];
+                }
+            };
+
+            input.onfocus = function() {
+                hideAllSuggestLists();
+                updateList();
+            };
+            
+            input.oninput = function() {
+                updateList();
+            };
+            
+            input.onkeydown = function(e) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (currentSuggestItems.length > 0) {
+                        currentFocusIndex = Math.min(currentFocusIndex + 1, currentSuggestItems.length - 1);
+                        updateActiveItem();
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (currentSuggestItems.length > 0) {
+                        currentFocusIndex = Math.max(currentFocusIndex - 1, 0);
+                        updateActiveItem();
+                    }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (currentFocusIndex >= 0 && currentSuggestItems[currentFocusIndex]) {
+                        currentSuggestItems[currentFocusIndex].click();
+                    } else if (currentSuggestItems.length > 0 && currentSuggestItems[0]) {
                         currentSuggestItems[0].click();
                     }
                 } else if (e.key === 'Escape') {
@@ -796,9 +991,8 @@
 
                 const updateList = () => {
                     const val = input.value.toLowerCase();
-                    // عرض المطابقة الجزئية عند الكتابة
                     const uniqueValues = [...new Set(dataArray.map(row => String(row[config.key] || '')))]
-                        .filter(v => v && v.toLowerCase().includes(val)) // مطابقة جزئية
+                        .filter(v => v && v.toLowerCase().includes(val))
                         .slice(0, 15);
 
                     list.innerHTML = '';
@@ -816,6 +1010,7 @@
                                 else if (currentTab === 'sales') renderSales();
                                 else if (currentTab === 'purchases') renderPurchases();
                                 else if (currentTab === 'journal') renderJournal();
+                                else if (currentTab === 'balances') renderBalances();
                             };
                             list.appendChild(div);
                             currentSuggestItems.push(div);
@@ -856,7 +1051,6 @@
                         if (currentFocusIndex >= 0 && currentSuggestItems[currentFocusIndex]) {
                             currentSuggestItems[currentFocusIndex].click();
                         } else if (currentSuggestItems.length > 0 && currentSuggestItems[0]) {
-                            // إذا لم يكن هناك عنصر محدد، اختر الأول
                             currentSuggestItems[0].click();
                         }
                     } else if (e.key === 'Escape') {
@@ -867,12 +1061,10 @@
         }
 
         function updateActiveItem() {
-            // إزالة التحديد من جميع العناصر
             currentSuggestItems.forEach(item => {
                 item.classList.remove('active');
             });
             
-            // إضافة التحديد للعنصر الحالي
             if (currentFocusIndex >= 0 && currentSuggestItems[currentFocusIndex]) {
                 currentSuggestItems[currentFocusIndex].classList.add('active');
                 currentSuggestItems[currentFocusIndex].scrollIntoView({ block: 'nearest' });
@@ -894,6 +1086,7 @@
                 !e.target.classList.contains('sales-search-input') && 
                 !e.target.classList.contains('purchases-search-input') &&
                 !e.target.classList.contains('journal-search-input') &&
+                !e.target.classList.contains('balances-search-input') &&
                 !e.target.classList.contains('suggestion-item')) {
                 hideAllSuggestLists();
             }
@@ -901,8 +1094,15 @@
 
         // دالة مساعدة للبحث بمطابقة تامة أو عرض الكل
         function searchFilter(value, searchValue) {
-            if (!searchValue) return true; // إذا كان البحث فارغاً، عرض كل شيء
-            return String(value || '').toLowerCase() === searchValue.toLowerCase(); // مطابقة تامة
+            if (!searchValue) return true;
+            return String(value || '').toLowerCase() === searchValue.toLowerCase();
+        }
+
+        // دالة مساعدة لتحويل النصوص إلى أرقام مع التعامل مع الفاصلة والفراغات
+        function parseNumber(value) {
+            if (!value) return 0;
+            const cleaned = String(value).replace(/[^\d.-]/g, '').replace(/,/g, '');
+            return parseFloat(cleaned) || 0;
         }
 
         // عرض بيانات الأصناف
@@ -925,8 +1125,8 @@
             );
             
             filteredData.forEach((row, i) => {
-                const buy = parseFloat(String(row['شراء']).replace(/[^\d.]/g, '')) || 0;
-                const disc = parseFloat(String(row['الحسم']).replace(/[^\d.]/g, '')) || 0;
+                const buy = parseNumber(row['شراء']);
+                const disc = parseNumber(row['الحسم']);
                 const final = buy - (buy * disc / 100);
                 const plus = final * 1.15;
                 const syp = plus * rate;
@@ -969,15 +1169,12 @@
             let totalSyp = 0;
             
             filteredData.forEach((row, i) => {
-                const price = parseFloat(String(row['السعر دولار']).replace(/[^\d.]/g, '')) || 0;
-                const quantity = parseFloat(String(row['الكمية']).replace(/[^\d.]/g, '')) || 0;
+                const price = parseNumber(row['السعر دولار']);
+                const quantity = parseNumber(row['الكمية']);
                 const totalUsdRow = price * quantity;
-                // استخدام عمود "السعر سوري" (العمود J) لسعر السوري
-                const priceSyp = parseFloat(String(row['السعر سوري']).replace(/[^\d.]/g, '')) || 0;
-                // استخدام عمود "ا.سوري" (العمود K) لإجمالي السوري
-                const totalSypRow = parseFloat(String(row['ا.سوري']).replace(/[^\d.]/g, '')) || 0;
+                const priceSyp = parseNumber(row['السعر سوري']);
+                const totalSypRow = parseNumber(row['ا.سوري']);
                 
-                // جمع الإجماليات
                 totalUsd += totalUsdRow;
                 totalSyp += totalSypRow;
                 
@@ -997,7 +1194,6 @@
                 tbody.appendChild(tr);
             });
             
-            // تحديث الإجماليات
             document.getElementById('salesTotalUsd').textContent = `${totalUsd.toFixed(2)} $`;
             document.getElementById('salesTotalSyp').textContent = `${Math.round(totalSyp).toLocaleString()} ل.س`;
         }
@@ -1023,13 +1219,12 @@
             let totalUsd = 0;
             
             filteredData.forEach((row, i) => {
-                const price = parseFloat(String(row['السعر']).replace(/[^\d.]/g, '')) || 0;
-                const quantity = parseFloat(String(row['الكمية']).replace(/[^\d.]/g, '')) || 0;
-                const discount = parseFloat(String(row['الحسم']).replace(/[^\d.]/g, '')) || 0;
+                const price = parseNumber(row['السعر']);
+                const quantity = parseNumber(row['الكمية']);
+                const discount = parseNumber(row['الحسم']);
                 const afterDiscount = price - (price * discount / 100);
                 const totalUsdRow = afterDiscount * quantity;
                 
-                // جمع الإجمالي
                 totalUsd += totalUsdRow;
                 
                 const tr = document.createElement('tr');
@@ -1048,7 +1243,6 @@
                 tbody.appendChild(tr);
             });
             
-            // تحديث الإجمالي
             document.getElementById('purchasesTotalUsd').textContent = `${totalUsd.toFixed(2)} $`;
         }
 
@@ -1072,8 +1266,8 @@
             filteredData.forEach((row, i) => {
                 const credit = String(row['دائن'] || '').trim();
                 const debit = String(row['مدين'] || '').trim();
-                const usd = parseFloat(String(row['دولار']).replace(/[^\d.]/g, '')) || 0;
-                const syp = parseFloat(String(row['سوري']).replace(/[^\d.]/g, '')) || 0;
+                const usd = parseNumber(row['دولار']);
+                const syp = parseNumber(row['سوري']);
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -1087,6 +1281,72 @@
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        // عرض بيانات الأرصدة
+        function renderBalances() {
+            const tbody = document.getElementById('balancesTableBody');
+            const filters = {
+                account: document.getElementById('searchBalancesAccount').value.toLowerCase()
+            };
+            
+            tbody.innerHTML = '';
+            
+            // فلترة البيانات حسب البحث وعرض فقط الصفوف التي لديها رصيد غير صفري
+            const filteredData = allBalancesData.filter(row => {
+                const account = String(row['الحساب'] || '');
+                const balanceUsd = parseNumber(row['الرصيد دولار']);
+                const balanceSyp = parseNumber(row['الرصيد سوري']);
+                
+                // عرض فقط الحسابات التي لديها رصيد غير صفري
+                const hasNonZeroBalance = balanceUsd !== 0 || balanceSyp !== 0;
+                
+                // تطبيق البحث
+                const matchesSearch = !filters.account || account.toLowerCase() === filters.account.toLowerCase();
+                
+                return hasNonZeroBalance && matchesSearch;
+            });
+            
+            let totalUsd = 0;
+            let totalSyp = 0;
+            
+            filteredData.forEach((row, i) => {
+                const salesUsd = parseNumber(row['مبيعات دولار']);
+                const salesSyp = parseNumber(row['مبيعات سوري']);
+                const purchasesUsd = parseNumber(row['مشتريات دولار']);
+                const purchasesSyp = parseNumber(row['مشتريات سوري']);
+                const debitUsd = parseNumber(row['الضغوط دولار']);
+                const debitSyp = parseNumber(row['الضغوط سوري']);
+                const balanceUsd = parseNumber(row['الرصيد دولار']);
+                const balanceSyp = parseNumber(row['الرصيد سوري']);
+                
+                // جمع الإجماليات
+                totalUsd += balanceUsd;
+                totalSyp += balanceSyp;
+                
+                // تحديد التنسيق بناءً على إشارة الرصيد (خلفية بيضاء فقط)
+                const balanceUsdClass = balanceUsd >= 0 ? 'balance-usd-positive' : 'balance-usd-negative';
+                const balanceSypClass = balanceSyp >= 0 ? 'balance-syp-positive' : 'balance-syp-negative';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-gray-400 text-[10px]">${i + 1}</td>
+                    <td class="text-right font-bold text-gray-800">${row['الحساب'] || ''}</td>
+                    <td>${salesUsd.toFixed(2)}</td>
+                    <td>${Math.round(salesSyp).toLocaleString()}</td>
+                    <td>${purchasesUsd.toFixed(2)}</td>
+                    <td>${Math.round(purchasesSyp).toLocaleString()}</td>
+                    <td>${debitUsd.toFixed(2)}</td>
+                    <td>${Math.round(debitSyp).toLocaleString()}</td>
+                    <td class="${balanceUsdClass} font-bold">${balanceUsd.toFixed(2)}</td>
+                    <td class="${balanceSypClass} font-bold">${Math.round(balanceSyp).toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // تحديث الإجماليات
+            document.getElementById('balancesTotalUsd').textContent = `${totalUsd.toFixed(2)} $`;
+            document.getElementById('balancesTotalSyp').textContent = `${Math.round(totalSyp).toLocaleString()} ل.س`;
         }
 
         // تبديل التبويبات
@@ -1106,7 +1366,8 @@
                 'items': ['itemsSearch', 'itemsTable'],
                 'sales': ['salesSearch', 'salesTable'],
                 'purchases': ['purchasesSearch', 'purchasesTable'],
-                'journal': ['journalSearch', 'journalTable']
+                'journal': ['journalSearch', 'journalTable'],
+                'balances': ['balancesSearch', 'balancesTable']
             };
             
             tabs[tabName].forEach(id => {
@@ -1130,7 +1391,7 @@
             itemsColumns.forEach(col => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-2 cursor-pointer';
-                const isChecked = printSettings.items[col.id] !== false; // true by default
+                const isChecked = printSettings.items[col.id] !== false;
                 label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} data-col-ref="${col.id}"> ${col.label}`;
                 itemsContainer.appendChild(label);
             });
@@ -1141,7 +1402,7 @@
             salesColumns.forEach(col => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-2 cursor-pointer';
-                const isChecked = printSettings.sales[col.id] !== false; // true by default
+                const isChecked = printSettings.sales[col.id] !== false;
                 label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} data-col-ref="${col.id}"> ${col.label}`;
                 salesContainer.appendChild(label);
             });
@@ -1152,7 +1413,7 @@
             purchasesColumns.forEach(col => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-2 cursor-pointer';
-                const isChecked = printSettings.purchases[col.id] !== false; // true by default
+                const isChecked = printSettings.purchases[col.id] !== false;
                 label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} data-col-ref="${col.id}"> ${col.label}`;
                 purchasesContainer.appendChild(label);
             });
@@ -1163,9 +1424,20 @@
             journalColumns.forEach(col => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-2 cursor-pointer';
-                const isChecked = printSettings.journal[col.id] !== false; // true by default
+                const isChecked = printSettings.journal[col.id] !== false;
                 label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} data-col-ref="${col.id}"> ${col.label}`;
                 journalContainer.appendChild(label);
+            });
+
+            // خيارات طباعة الأرصدة
+            const balancesContainer = document.getElementById('balancesColumnCheckboxes');
+            balancesContainer.innerHTML = '';
+            balancesColumns.forEach(col => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-2 cursor-pointer';
+                const isChecked = printSettings.balances[col.id] !== false;
+                label.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''} data-col-ref="${col.id}"> ${col.label}`;
+                balancesContainer.appendChild(label);
             });
         }
 
@@ -1207,6 +1479,13 @@
                 printSettings.journal[colId] = check.checked;
             });
 
+            // حفظ إعدادات الأرصدة
+            const balancesChecks = document.querySelectorAll('#balancesColumnCheckboxes input');
+            balancesChecks.forEach(check => {
+                const colId = check.getAttribute('data-col-ref');
+                printSettings.balances[colId] = check.checked;
+            });
+
             // حفظ في localStorage
             localStorage.setItem('printSettings', JSON.stringify(printSettings));
             
@@ -1223,7 +1502,8 @@
                 'items': 'printOptions',
                 'sales': 'salesPrintOptions',
                 'purchases': 'purchasesPrintOptions',
-                'journal': 'journalPrintOptions'
+                'journal': 'journalPrintOptions',
+                'balances': 'balancesPrintOptions'
             };
             
             const div = document.getElementById(tabOptions[currentTab]);
@@ -1236,22 +1516,20 @@
             document.getElementById('salesPrintOptions').style.display = 'none';
             document.getElementById('purchasesPrintOptions').style.display = 'none';
             document.getElementById('journalPrintOptions').style.display = 'none';
+            document.getElementById('balancesPrintOptions').style.display = 'none';
         }
 
         // إعداد الطباعة
         function preparePrint() {
-            let checks, colSelector;
-            
             const tabConfigs = {
                 'items': {checks: '#columnCheckboxes input', selector: '#mainTable'},
                 'sales': {checks: '#salesColumnCheckboxes input', selector: '#salesTableContent'},
                 'purchases': {checks: '#purchasesColumnCheckboxes input', selector: '#purchasesTableContent'},
-                'journal': {checks: '#journalColumnCheckboxes input', selector: '#journalTableContent'}
+                'journal': {checks: '#journalColumnCheckboxes input', selector: '#journalTableContent'},
+                'balances': {checks: '#balancesColumnCheckboxes input', selector: '#balancesTableContent'}
             };
             
             const config = tabConfigs[currentTab];
-            
-            // استخدام الإعدادات المحفوظة للتحقق
             const currentSettings = printSettings[currentTab];
             
             // إخفاء جميع الأعمدة أولاً
@@ -1289,6 +1567,7 @@
         document.querySelectorAll('.sales-search-input').forEach(el => el.addEventListener('input', renderSales));
         document.querySelectorAll('.purchases-search-input').forEach(el => el.addEventListener('input', renderPurchases));
         document.querySelectorAll('.journal-search-input').forEach(el => el.addEventListener('input', renderJournal));
+        document.querySelectorAll('.balances-search-input').forEach(el => el.addEventListener('input', renderBalances));
         
         document.getElementById('exchangeRate').addEventListener('input', () => {
             if (currentTab === 'items') renderItems();
@@ -1299,7 +1578,7 @@
         window.onload = () => { 
             initPrintOptions(); 
             fetchAllData(); 
-            startAutoSync(); // بدء المزامنة التلقائية
+            startAutoSync();
         };
     </script>
 </body>
