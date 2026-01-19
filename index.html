@@ -313,8 +313,6 @@
         .type-journal { background: #fef3c7; color: #92400e; }
         .type-payment { background: #dcfce7; color: #166534; }
         .type-receipt { background: #fee2e2; color: #991b1b; }
-        
-        /* تم إزالة قسم الرصيد الافتتاحي من فوق الإجمالي */
     </style>
 </head>
 <body>
@@ -419,14 +417,14 @@
             <div id="statementSearch" class="tab-content">
                 <div class="grid grid-cols-6 gap-3 pb-2">
                     <div class="search-wrapper">
-                        <input type="text" id="searchStatementAccount" placeholder="اسم العميل/المورد" class="input-glass statement-search-input" autocomplete="off" onkeypress="if(event.key === 'Enter') renderStatement()">
+                        <input type="text" id="searchStatementAccount" placeholder="اسم العميل/المورد (اختياري)" class="input-glass statement-search-input" autocomplete="off">
                         <div id="suggestStatementAccount" class="suggestions-list"></div>
                     </div>
                     <div class="search-wrapper">
-                        <input type="date" id="searchStatementDateFrom" class="input-glass statement-search-input">
+                        <input type="date" id="searchStatementDateFrom" class="input-glass statement-search-input" placeholder="من تاريخ">
                     </div>
                     <div class="search-wrapper">
-                        <input type="date" id="searchStatementDateTo" class="input-glass statement-search-input">
+                        <input type="date" id="searchStatementDateTo" class="input-glass statement-search-input" placeholder="إلى تاريخ">
                     </div>
                     <div class="search-wrapper">
                         <input type="text" id="searchStatementType" placeholder="النوع (مبيعات، مشتريات،...)" class="input-glass statement-search-input" autocomplete="off">
@@ -608,6 +606,7 @@
                             <th data-col="type">النوع</th>
                             <th data-col="invoice">الفاتورة</th>
                             <th data-col="description">البيان</th>
+                            <th data-col="account">الحساب</th>
                             <th data-col="debit_usd">مدين (دولار)</th>
                             <th data-col="credit_usd">دائن (دولار)</th>
                             <th data-col="balance_usd">الرصيد (دولار)</th>
@@ -685,6 +684,7 @@
             {id:'type',label:'النوع'},
             {id:'invoice',label:'الفاتورة'},
             {id:'description',label:'البيان'},
+            {id:'account',label:'الحساب'},
             {id:'debit_usd',label:'مدين (دولار)'},
             {id:'credit_usd',label:'دائن (دولار)'},
             {id:'balance_usd',label:'الرصيد (دولار)'}
@@ -707,7 +707,7 @@
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allItemsData = res.data;
-                        // إزالة الصف الأخير فقط إذا كان فارغاً
+                        // إزالة الصفوف الفارغة فقط
                         allItemsData = allItemsData.filter(row => {
                             return Object.values(row).some(value => value && value.toString().trim() !== '');
                         });
@@ -1021,7 +1021,7 @@
                     let uniqueValues = [];
 
                     if (inputId === 'searchStatementAccount') {
-                        // جمع أسماء الحسابات الفريدة من المبيعات والمشتريات واليومية والرصيد الافتتاحي
+                        // جمع أسماء الحسابات الفريدة من جميع المصادر
                         const salesAccounts = [...new Set(allSalesData.map(row => String(row['العميل'] || '')))];
                         const purchasesAccounts = [...new Set(allPurchasesData.map(row => String(row['المورد'] || '')))];
                         const journalCreditAccounts = [...new Set(allJournalData.map(row => String(row['دائن'] || '')))];
@@ -1065,7 +1065,8 @@
                             div.onclick = () => {
                                 input.value = v;
                                 hideAllSuggestLists();
-                                renderStatement();
+                                // البحث تلقائي عند اختيار قيمة
+                                setTimeout(() => renderStatement(), 100);
                             };
                             list.appendChild(div);
                             currentSuggestItems.push(div);
@@ -1086,6 +1087,11 @@
                 
                 input.oninput = function() {
                     updateList();
+                    // البحث تلقائي عند الكتابة (مع تأخير بسيط)
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        if (currentTab === 'statement') renderStatement();
+                    }, 500);
                 };
                 
                 input.onkeydown = function(e) {
@@ -1108,12 +1114,22 @@
                         } else if (currentSuggestItems.length > 0 && currentSuggestItems[0]) {
                             currentSuggestItems[0].click();
                         } else {
+                            // البحث عند الضغط على Enter
                             renderStatement();
                         }
                     } else if (e.key === 'Escape') {
                         hideAllSuggestLists();
                     }
                 };
+            });
+
+            // مستمعات للتواريخ
+            document.getElementById('searchStatementDateFrom').addEventListener('change', function() {
+                if (currentTab === 'statement') renderStatement();
+            });
+            
+            document.getElementById('searchStatementDateTo').addEventListener('change', function() {
+                if (currentTab === 'statement') renderStatement();
             });
         }
 
@@ -1166,6 +1182,12 @@
                 
                 input.oninput = function() {
                     updateList();
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        if (currentTab === 'items') renderItems();
+                        else if (currentTab === 'journal') renderJournal();
+                        else if (currentTab === 'balances') renderBalances();
+                    }, 300);
                 };
                 
                 input.onkeydown = function(e) {
@@ -1245,19 +1267,29 @@
             return parseFloat(cleaned) || 0;
         }
 
-        // دالة لتحويل التاريخ إلى صيغة قابلة للمقارنة
+        // دالة محسنة لتحويل التاريخ إلى صيغة قابلة للمقارنة
         function parseDate(dateStr) {
             if (!dateStr) return new Date(0);
             
             // محاولة تحليل تنسيقات مختلفة للتاريخ
-            const parts = dateStr.split(/[/-]/);
+            const parts = dateStr.split(/[/\-.]/);
             if (parts.length === 3) {
                 const day = parseInt(parts[0]);
                 const month = parseInt(parts[1]);
                 const year = parseInt(parts[2]);
-                if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-                    return new Date(year, month - 1, day);
+                
+                // إذا كان السنة مكونة من رقمين، نضيف 2000
+                const fullYear = year < 100 ? 2000 + year : year;
+                
+                if (!isNaN(day) && !isNaN(month) && !isNaN(fullYear)) {
+                    return new Date(fullYear, month - 1, day);
                 }
+            }
+            
+            // محاولة تحليل كتاريخ مباشر
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                return date;
             }
             
             return new Date(0);
@@ -1266,22 +1298,29 @@
         // دالة لتحويل تاريخ HTML إلى كائن Date
         function parseHtmlDate(dateStr) {
             if (!dateStr) return null;
-            return new Date(dateStr);
+            const date = new Date(dateStr);
+            return !isNaN(date.getTime()) ? date : null;
         }
 
-        // دالة لمقارنة التواريخ
+        // دالة محسنة لمقارنة التواريخ مع التعامل مع النطاقات
         function isDateInRange(dateStr, fromDate, toDate) {
             if (!fromDate && !toDate) return true;
             
             const date = parseDate(dateStr);
             if (!date || date.getTime() === 0) return false;
             
-            if (fromDate && toDate) {
-                return date >= fromDate && date <= toDate;
+            // إضافة يوم كامل لـ toDate لتضمين التاريخ نفسه
+            if (toDate) {
+                const toDateEnd = new Date(toDate);
+                toDateEnd.setDate(toDateEnd.getDate() + 1);
+                
+                if (fromDate) {
+                    return date >= fromDate && date < toDateEnd;
+                } else {
+                    return date < toDateEnd;
+                }
             } else if (fromDate) {
                 return date >= fromDate;
-            } else if (toDate) {
-                return date <= toDate;
             }
             
             return true;
@@ -1475,25 +1514,16 @@
         // عرض كشف الحساب
         function renderStatement() {
             const accountName = document.getElementById('searchStatementAccount').value.trim();
-            
-            if (!accountName) {
-                alert('الرجاء إدخال اسم الحساب (عميل/مورد)');
-                return;
-            }
-            
             const tbody = document.getElementById('statementTableBody');
             const header = document.getElementById('statementHeader');
             const summary = document.getElementById('statementSummary');
             
-            // إظهار الرأس والملخص فقط
-            header.style.display = 'block';
-            summary.style.display = 'grid';
-            
-            // تحديث اسم الحساب في الرأس
-            document.getElementById('statementAccountName').textContent = `كشف حساب: ${accountName}`;
-            
-            // الحصول على الرصيد الافتتاحي
-            const openingBalance = getOpeningBalance(accountName);
+            // جمع معايير البحث
+            const fromDate = parseHtmlDate(document.getElementById('searchStatementDateFrom').value);
+            const toDate = parseHtmlDate(document.getElementById('searchStatementDateTo').value);
+            const typeFilter = document.getElementById('searchStatementType').value.toLowerCase();
+            const invoiceFilter = document.getElementById('searchStatementInvoice').value.toLowerCase();
+            const itemFilter = document.getElementById('searchStatementItem').value.toLowerCase();
             
             // جمع البيانات من جميع المصادر
             const statementData = [];
@@ -1503,23 +1533,18 @@
             let totalReceipts = 0; // المقبوضات (الدائن في اليومية - أي دفع لنا)
             let totalPayments = 0; // المدفوعات (المدين في اليومية - أي دفعنا له)
             
-            // الحصول على معايير البحث
-            const fromDate = parseHtmlDate(document.getElementById('searchStatementDateFrom').value);
-            const toDate = parseHtmlDate(document.getElementById('searchStatementDateTo').value);
-            const typeFilter = document.getElementById('searchStatementType').value.toLowerCase();
-            const invoiceFilter = document.getElementById('searchStatementInvoice').value.toLowerCase();
-            const itemFilter = document.getElementById('searchStatementItem').value.toLowerCase();
+            // 1. بيانات المبيعات
+            const salesFiltered = allSalesData.filter(row => {
+                const matchesAccount = !accountName || String(row['العميل'] || '').trim() === accountName;
+                const matchesDate = isDateInRange(row['التاريخ'], fromDate, toDate);
+                const matchesType = !typeFilter || 'مبيعات'.includes(typeFilter);
+                const matchesInvoice = !invoiceFilter || partialSearchFilter(row['الفاتورة'], invoiceFilter);
+                const matchesItem = !itemFilter || partialSearchFilter(row['الصنف'], itemFilter);
+                
+                return matchesAccount && matchesDate && matchesType && matchesInvoice && matchesItem;
+            });
             
-            // 1. بيانات المبيعات للعميل
-            const salesForAccount = allSalesData.filter(row => 
-                String(row['العميل'] || '').trim() === accountName &&
-                isDateInRange(row['التاريخ'], fromDate, toDate) &&
-                (!typeFilter || 'مبيعات'.includes(typeFilter)) &&
-                (!invoiceFilter || partialSearchFilter(row['الفاتورة'], invoiceFilter)) &&
-                (!itemFilter || partialSearchFilter(row['الصنف'], itemFilter))
-            );
-            
-            salesForAccount.forEach(row => {
+            salesFiltered.forEach(row => {
                 const date = row['التاريخ'] || '';
                 const price = parseNumber(row['السعر دولار']);
                 const quantity = parseNumber(row['الكمية']);
@@ -1533,22 +1558,25 @@
                     typeClass: 'type-sales',
                     invoice: row['الفاتورة'] || '',
                     description: row['الصنف'] || '',
+                    account: row['العميل'] || '',
                     debit: totalUsdRow, // المبيعات: العميل مدين (يجب أن يدفع)
                     credit: 0, // المبيعات: العميل مدين (يجب أن يدفع)
                     rawDate: parseDate(date)
                 });
             });
             
-            // 2. بيانات المشتريات من المورد
-            const purchasesFromAccount = allPurchasesData.filter(row => 
-                String(row['المورد'] || '').trim() === accountName &&
-                isDateInRange(row['التاريخ'], fromDate, toDate) &&
-                (!typeFilter || 'مشتريات'.includes(typeFilter)) &&
-                (!invoiceFilter || partialSearchFilter(row['الفاتورة'], invoiceFilter)) &&
-                (!itemFilter || partialSearchFilter(row['الصنف'], itemFilter))
-            );
+            // 2. بيانات المشتريات
+            const purchasesFiltered = allPurchasesData.filter(row => {
+                const matchesAccount = !accountName || String(row['المورد'] || '').trim() === accountName;
+                const matchesDate = isDateInRange(row['التاريخ'], fromDate, toDate);
+                const matchesType = !typeFilter || 'مشتريات'.includes(typeFilter);
+                const matchesInvoice = !invoiceFilter || partialSearchFilter(row['الفاتورة'], invoiceFilter);
+                const matchesItem = !itemFilter || partialSearchFilter(row['الصنف'], itemFilter);
+                
+                return matchesAccount && matchesDate && matchesType && matchesInvoice && matchesItem;
+            });
             
-            purchasesFromAccount.forEach(row => {
+            purchasesFiltered.forEach(row => {
                 const date = row['التاريخ'] || '';
                 const price = parseNumber(row['السعر']);
                 const quantity = parseNumber(row['الكمية']);
@@ -1564,21 +1592,25 @@
                     typeClass: 'type-purchase',
                     invoice: row['الفاتورة'] || '',
                     description: row['الصنف'] || '',
+                    account: row['المورد'] || '',
                     debit: 0, // المشتريات: نحن مدينون (يجب أن ندفع)
                     credit: totalUsdRow, // المشتريات: نحن مدينون (يجب أن ندفع)
                     rawDate: parseDate(date)
                 });
             });
             
-            // 3. بيانات اليومية الخاصة بالحساب
-            const journalForAccount = allJournalData.filter(row => 
-                (String(row['دائن'] || '').trim() === accountName ||
-                 String(row['مدين'] || '').trim() === accountName) &&
-                isDateInRange(row['التاريخ'], fromDate, toDate) &&
-                (!typeFilter || typeFilter === '')
-            );
+            // 3. بيانات اليومية
+            const journalFiltered = allJournalData.filter(row => {
+                const matchesAccount = !accountName || 
+                    String(row['دائن'] || '').trim() === accountName ||
+                    String(row['مدين'] || '').trim() === accountName;
+                const matchesDate = isDateInRange(row['التاريخ'], fromDate, toDate);
+                const matchesType = !typeFilter || typeFilter === '' || typeFilter === 'يومية';
+                
+                return matchesAccount && matchesDate && matchesType;
+            });
             
-            journalForAccount.forEach(row => {
+            journalFiltered.forEach(row => {
                 const date = row['التاريخ'] || '';
                 const usd = parseNumber(row['دولار']);
                 const creditName = String(row['دائن'] || '').trim();
@@ -1587,133 +1619,187 @@
                 
                 let type = 'يومية';
                 let typeClass = 'type-journal';
+                let accountNameForRow = '';
                 
-                if (creditName === accountName) {
-                    // الحساب هو الدائن (أي دفع لنا)
+                if (creditName === accountName || (!accountName && creditName)) {
+                    // الحساب هو الدائن (أي دفع لنا) أو بحث عام
                     totalReceipts += usd;
-                    type = 'مقبوضات';
-                    typeClass = 'type-receipt';
-                    
-                    statementData.push({
-                        date: date,
-                        type: type,
-                        typeClass: typeClass,
-                        invoice: '',
-                        description: description,
-                        debit: 0, // الحساب دائن (دفع لنا)
-                        credit: usd, // الحساب دائن (دفع لنا)
-                        rawDate: parseDate(date)
-                    });
-                } else if (debitName === accountName) {
-                    // الحساب هو المدين (أي دفعنا له)
+                    if (typeFilter === 'مقبوضات' || typeFilter === '') {
+                        type = 'مقبوضات';
+                        typeClass = 'type-receipt';
+                        accountNameForRow = creditName;
+                        
+                        statementData.push({
+                            date: date,
+                            type: type,
+                            typeClass: typeClass,
+                            invoice: '',
+                            description: description,
+                            account: accountNameForRow,
+                            debit: 0, // الحساب دائن (دفع لنا)
+                            credit: usd, // الحساب دائن (دفع لنا)
+                            rawDate: parseDate(date)
+                        });
+                    }
+                } else if (debitName === accountName || (!accountName && debitName)) {
+                    // الحساب هو المدين (أي دفعنا له) أو بحث عام
                     totalPayments += usd;
-                    type = 'مدفوعات';
-                    typeClass = 'type-payment';
-                    
-                    statementData.push({
-                        date: date,
-                        type: type,
-                        typeClass: typeClass,
-                        invoice: '',
-                        description: description,
-                        debit: usd, // الحساب مدين (دفعنا له)
-                        credit: 0, // الحساب مدين (دفعنا له)
-                        rawDate: parseDate(date)
-                    });
+                    if (typeFilter === 'مدفوعات' || typeFilter === '') {
+                        type = 'مدفوعات';
+                        typeClass = 'type-payment';
+                        accountNameForRow = debitName;
+                        
+                        statementData.push({
+                            date: date,
+                            type: type,
+                            typeClass: typeClass,
+                            invoice: '',
+                            description: description,
+                            account: accountNameForRow,
+                            debit: usd, // الحساب مدين (دفعنا له)
+                            credit: 0, // الحساب مدين (دفعنا له)
+                            rawDate: parseDate(date)
+                        });
+                    }
                 }
             });
             
             // ترتيب البيانات حسب التاريخ
             statementData.sort((a, b) => a.rawDate - b.rawDate);
             
-            // حساب الرصيد الجاري - بدءًا من الرصيد الافتتاحي
-            let runningBalance = openingBalance;
-            
             tbody.innerHTML = '';
             
-            // إضافة سطر الرصيد الافتتاحي في بداية الجدول فقط إذا كان هناك رصيد
-            if (openingBalance !== 0) {
-                const openingRow = document.createElement('tr');
-                openingRow.className = 'bg-gray-100 font-bold';
-                openingRow.innerHTML = `
-                    <td class="text-gray-500 text-[10px]">-</td>
-                    <td class="text-[11px] text-gray-700">رصيد افتتاحي</td>
-                    <td><span class="statement-type type-journal">افتتاحي</span></td>
-                    <td class="font-bold">-</td>
-                    <td class="text-right">الرصيد الافتتاحي</td>
-                    <td class="${openingBalance >= 0 ? 'debit-cell' : ''}">${openingBalance >= 0 ? openingBalance.toFixed(2) : ''}</td>
-                    <td class="${openingBalance < 0 ? 'credit-cell' : ''}">${openingBalance < 0 ? Math.abs(openingBalance).toFixed(2) : ''}</td>
-                    <td class="font-bold ${runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
-                        ${runningBalance.toFixed(2)}
-                    </td>
-                `;
-                tbody.appendChild(openingRow);
-            }
-            
-            statementData.forEach((item, i) => {
-                // تحديث الرصيد الجاري
-                runningBalance += item.debit - item.credit;
+            if (accountName) {
+                // إذا كان هناك اسم حساب، نعرض الرأس والملخص
+                header.style.display = 'block';
+                summary.style.display = 'grid';
                 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="text-gray-400 text-[10px]">${i + 1}</td>
-                    <td class="text-[11px] text-gray-700">${item.date}</td>
-                    <td><span class="statement-type ${item.typeClass}">${item.type}</span></td>
-                    <td class="font-bold">${item.invoice}</td>
-                    <td class="text-right">${item.description}</td>
-                    <td class="debit-cell">${item.debit > 0 ? item.debit.toFixed(2) : ''}</td>
-                    <td class="credit-cell">${item.credit > 0 ? item.credit.toFixed(2) : ''}</td>
-                    <td class="font-bold ${runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
-                        ${runningBalance.toFixed(2)}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            
-            // حساب الرصيد النهائي - بدءًا من الرصيد الافتتاحي
-            const finalBalance = openingBalance + totalSales - totalPurchases + totalPayments - totalReceipts;
-            
-            // تحديث الملخص
-            document.getElementById('summarySalesTotal').textContent = `${totalSales.toFixed(2)} $`;
-            document.getElementById('summaryPurchasesTotal').textContent = `${totalPurchases.toFixed(2)} $`;
-            document.getElementById('summaryReceiptsTotal').textContent = `${totalReceipts.toFixed(2)} $`;
-            document.getElementById('summaryPaymentsTotal').textContent = `${totalPayments.toFixed(2)} $`;
-            
-            const summaryBalanceElement = document.getElementById('summaryCurrentBalance');
-            summaryBalanceElement.textContent = `${finalBalance.toFixed(2)} $`;
-            
-            if (finalBalance >= 0) {
-                summaryBalanceElement.className = 'summary-value summary-positive';
-                summaryBalanceElement.title = 'الحساب مدين (يجب أن يدفع لنا)';
+                // تحديث اسم الحساب في الرأس
+                document.getElementById('statementAccountName').textContent = `كشف حساب: ${accountName}`;
+                
+                // الحصول على الرصيد الافتتاحي فقط إذا كان هناك حساب محدد
+                const openingBalance = getOpeningBalance(accountName);
+                
+                // حساب الرصيد النهائي - بدءًا من الرصيد الافتتاحي
+                const finalBalance = openingBalance + totalSales - totalPurchases + totalPayments - totalReceipts;
+                
+                // تحديث الملخص
+                document.getElementById('summarySalesTotal').textContent = `${totalSales.toFixed(2)} $`;
+                document.getElementById('summaryPurchasesTotal').textContent = `${totalPurchases.toFixed(2)} $`;
+                document.getElementById('summaryReceiptsTotal').textContent = `${totalReceipts.toFixed(2)} $`;
+                document.getElementById('summaryPaymentsTotal').textContent = `${totalPayments.toFixed(2)} $`;
+                
+                const summaryBalanceElement = document.getElementById('summaryCurrentBalance');
+                summaryBalanceElement.textContent = `${finalBalance.toFixed(2)} $`;
+                
+                if (finalBalance >= 0) {
+                    summaryBalanceElement.className = 'summary-value summary-positive';
+                    summaryBalanceElement.title = 'الحساب مدين (يجب أن يدفع لنا)';
+                } else {
+                    summaryBalanceElement.className = 'summary-value summary-negative';
+                    summaryBalanceElement.title = 'الحساب دائن (نحن مدينون له)';
+                }
+                
+                // حساب الرصيد الجاري - بدءًا من الرصيد الافتتاحي
+                let runningBalance = openingBalance;
+                
+                // إضافة سطر الرصيد الافتتاحي في بداية الجدول فقط إذا كان هناك رصيد
+                if (openingBalance !== 0) {
+                    const openingRow = document.createElement('tr');
+                    openingRow.className = 'bg-gray-100 font-bold';
+                    openingRow.innerHTML = `
+                        <td class="text-gray-500 text-[10px]">-</td>
+                        <td class="text-[11px] text-gray-700">رصيد افتتاحي</td>
+                        <td><span class="statement-type type-journal">افتتاحي</span></td>
+                        <td class="font-bold">-</td>
+                        <td class="text-right">الرصيد الافتتاحي</td>
+                        <td class="text-right font-bold">${accountName}</td>
+                        <td class="${openingBalance >= 0 ? 'debit-cell' : ''}">${openingBalance >= 0 ? openingBalance.toFixed(2) : ''}</td>
+                        <td class="${openingBalance < 0 ? 'credit-cell' : ''}">${openingBalance < 0 ? Math.abs(openingBalance).toFixed(2) : ''}</td>
+                        <td class="font-bold ${runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${runningBalance.toFixed(2)}
+                        </td>
+                    `;
+                    tbody.appendChild(openingRow);
+                }
+                
+                statementData.forEach((item, i) => {
+                    // تحديث الرصيد الجاري
+                    runningBalance += item.debit - item.credit;
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-gray-400 text-[10px]">${i + 1}</td>
+                        <td class="text-[11px] text-gray-700">${item.date}</td>
+                        <td><span class="statement-type ${item.typeClass}">${item.type}</span></td>
+                        <td class="font-bold">${item.invoice}</td>
+                        <td class="text-right">${item.description}</td>
+                        <td class="text-right font-bold text-blue-700">${item.account}</td>
+                        <td class="debit-cell">${item.debit > 0 ? item.debit.toFixed(2) : ''}</td>
+                        <td class="credit-cell">${item.credit > 0 ? item.credit.toFixed(2) : ''}</td>
+                        <td class="font-bold ${runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${runningBalance.toFixed(2)}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                // تحديث الفترة الزمنية
+                if (statementData.length > 0) {
+                    const firstDate = statementData[0].date;
+                    const lastDate = statementData[statementData.length - 1].date;
+                    document.getElementById('statementPeriod').textContent = `الفترة: ${firstDate} إلى ${lastDate}`;
+                } else if (openingBalance !== 0) {
+                    document.getElementById('statementPeriod').textContent = 'لا توجد حركات - رصيد افتتاحي فقط';
+                } else {
+                    document.getElementById('statementPeriod').textContent = 'لا توجد حركات للحساب';
+                }
+                
+                // إضافة سطر الإجمالي
+                if (statementData.length > 0 || openingBalance !== 0) {
+                    const totalRow = document.createElement('tr');
+                    totalRow.className = 'bg-gray-50 font-bold';
+                    totalRow.innerHTML = `
+                        <td colspan="6" class="text-right py-2">الإجمالي</td>
+                        <td class="debit-cell py-2">${totalSales.toFixed(2)}</td>
+                        <td class="credit-cell py-2">${totalPurchases.toFixed(2)}</td>
+                        <td class="font-bold py-2 ${finalBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${finalBalance.toFixed(2)}
+                        </td>
+                    `;
+                    tbody.appendChild(totalRow);
+                }
             } else {
-                summaryBalanceElement.className = 'summary-value summary-negative';
-                summaryBalanceElement.title = 'الحساب دائن (نحن مدينون له)';
+                // إذا لم يكن هناك اسم حساب، نعرض البحث العام
+                header.style.display = 'none';
+                summary.style.display = 'none';
+                
+                statementData.forEach((item, i) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-gray-400 text-[10px]">${i + 1}</td>
+                        <td class="text-[11px] text-gray-700">${item.date}</td>
+                        <td><span class="statement-type ${item.typeClass}">${item.type}</span></td>
+                        <td class="font-bold">${item.invoice}</td>
+                        <td class="text-right">${item.description}</td>
+                        <td class="text-right font-bold text-blue-700">${item.account}</td>
+                        <td class="debit-cell">${item.debit > 0 ? item.debit.toFixed(2) : ''}</td>
+                        <td class="credit-cell">${item.credit > 0 ? item.credit.toFixed(2) : ''}</td>
+                        <td class="text-gray-500 text-sm">-</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
             }
             
-            // تحديث الفترة الزمنية
-            if (statementData.length > 0) {
-                const firstDate = statementData[0].date;
-                const lastDate = statementData[statementData.length - 1].date;
-                document.getElementById('statementPeriod').textContent = `الفترة: ${firstDate} إلى ${lastDate}`;
-            } else if (openingBalance !== 0) {
-                document.getElementById('statementPeriod').textContent = 'لا توجد حركات - رصيد افتتاحي فقط';
-            } else {
-                document.getElementById('statementPeriod').textContent = 'لا توجد حركات للحساب';
-            }
-            
-            // إضافة سطر الإجمالي
-            if (statementData.length > 0) {
-                const totalRow = document.createElement('tr');
-                totalRow.className = 'bg-gray-50 font-bold';
-                totalRow.innerHTML = `
-                    <td colspan="5" class="text-right py-2">الإجمالي</td>
-                    <td class="debit-cell py-2">${totalSales.toFixed(2)}</td>
-                    <td class="credit-cell py-2">${totalPurchases.toFixed(2)}</td>
-                    <td class="font-bold py-2 ${finalBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
-                        ${finalBalance.toFixed(2)}
+            // إذا لم تكن هناك بيانات
+            if (statementData.length === 0) {
+                const noDataRow = document.createElement('tr');
+                noDataRow.innerHTML = `
+                    <td colspan="9" class="text-center py-4 text-gray-500">
+                        <i class="fas fa-search mr-2"></i> لا توجد حركات تطابق معايير البحث
                     </td>
                 `;
-                tbody.appendChild(totalRow);
+                tbody.appendChild(noDataRow);
             }
         }
 
@@ -1746,11 +1832,37 @@
             // إخفاء جميع القوائم المنسدلة
             hideAllSuggestLists();
             
-            // إذا كان تبويب كشف الحساب، يتم البحث مباشرة إذا كان هناك حساب محدد
+            // إذا كان تبويب كشف الحساب، نقوم بالبحث تلقائياً إذا كان هناك معايير
             if (tabName === 'statement') {
-                const accountName = document.getElementById('searchStatementAccount').value.trim();
-                if (accountName) {
+                const hasSearchCriteria = 
+                    document.getElementById('searchStatementAccount').value.trim() ||
+                    document.getElementById('searchStatementType').value.trim() ||
+                    document.getElementById('searchStatementInvoice').value.trim() ||
+                    document.getElementById('searchStatementItem').value.trim() ||
+                    document.getElementById('searchStatementDateFrom').value ||
+                    document.getElementById('searchStatementDateTo').value;
+                
+                if (hasSearchCriteria) {
                     renderStatement();
+                } else {
+                    // إذا لم يكن هناك معايير بحث، نعرض رسالة توضيحية
+                    const tbody = document.getElementById('statementTableBody');
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="text-center py-8 text-gray-500">
+                                <i class="fas fa-info-circle text-2xl mb-2 block"></i>
+                                <p class="font-bold mb-1">مرحباً بك في كشف الحساب</p>
+                                <p class="text-sm">يمكنك البحث باستخدام أي من الخيارات التالية:</p>
+                                <ul class="text-xs mt-2 text-right list-none pr-4">
+                                    <li>✓ اسم العميل أو المورد</li>
+                                    <li>✓ تاريخ محدد أو نطاق تاريخ</li>
+                                    <li>✓ نوع الحركة (مبيعات، مشتريات، إلخ)</li>
+                                    <li>✓ رقم الفاتورة</li>
+                                    <li>✓ اسم الصنف</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    `;
                 }
             }
         }
@@ -1920,13 +2032,13 @@
         document.querySelectorAll('.search-input').forEach(el => el.addEventListener('input', renderItems));
         document.querySelectorAll('.journal-search-input').forEach(el => el.addEventListener('input', renderJournal));
         document.querySelectorAll('.balances-search-input').forEach(el => el.addEventListener('input', renderBalances));
-        document.querySelectorAll('.statement-search-input').forEach(el => el.addEventListener('input', renderStatement));
-        
-        // مستمع لكشف الحساب عند الضغط على Enter
-        document.getElementById('searchStatementAccount').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                renderStatement();
-            }
+        document.querySelectorAll('.statement-search-input').forEach(el => {
+            el.addEventListener('input', function() {
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => {
+                    if (currentTab === 'statement') renderStatement();
+                }, 300);
+            });
         });
         
         document.getElementById('exchangeRate').addEventListener('input', () => {
