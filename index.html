@@ -607,6 +607,8 @@
                             <th data-col="invoice">الفاتورة</th>
                             <th data-col="description">البيان</th>
                             <th data-col="account">الحساب</th>
+                            <th data-col="qty">الكمية</th>
+                            <th data-col="unit_price">السعر الفردي ($)</th>
                             <th data-col="debit_usd">مدين (دولار)</th>
                             <th data-col="credit_usd">دائن (دولار)</th>
                             <th data-col="balance_usd">الرصيد (دولار)</th>
@@ -678,6 +680,7 @@
             {id:'balance_syp',label:'الرصيد سوري'}
         ];
 
+        // تحديث تعريف أعمدة كشف الحساب لإضافة الكمية والسعر الفردي
         const statementColumns = [
             {id:'index',label:'#'},
             {id:'date',label:'التاريخ'},
@@ -685,6 +688,8 @@
             {id:'invoice',label:'الفاتورة'},
             {id:'description',label:'البيان'},
             {id:'account',label:'الحساب'},
+            {id:'qty',label:'الكمية'},
+            {id:'unit_price',label:'السعر الفردي ($)'},
             {id:'debit_usd',label:'مدين (دولار)'},
             {id:'credit_usd',label:'دائن (دولار)'},
             {id:'balance_usd',label:'الرصيد (دولار)'}
@@ -1546,8 +1551,8 @@
             
             salesFiltered.forEach(row => {
                 const date = row['التاريخ'] || '';
-                const price = parseNumber(row['السعر دولار']);
                 const quantity = parseNumber(row['الكمية']);
+                const price = parseNumber(row['السعر دولار']);
                 const totalUsdRow = price * quantity;
                 
                 totalSales += totalUsdRow;
@@ -1559,6 +1564,8 @@
                     invoice: row['الفاتورة'] || '',
                     description: row['الصنف'] || '',
                     account: row['العميل'] || '',
+                    qty: quantity,
+                    unit_price: price, // سعر الدولار الفردي للمبيعات
                     debit: totalUsdRow, // المبيعات: العميل مدين (يجب أن يدفع)
                     credit: 0, // المبيعات: العميل مدين (يجب أن يدفع)
                     rawDate: parseDate(date)
@@ -1578,8 +1585,8 @@
             
             purchasesFiltered.forEach(row => {
                 const date = row['التاريخ'] || '';
-                const price = parseNumber(row['السعر']);
                 const quantity = parseNumber(row['الكمية']);
+                const price = parseNumber(row['السعر']);
                 const discount = parseNumber(row['الحسم']);
                 const afterDiscount = price - (price * discount / 100);
                 const totalUsdRow = afterDiscount * quantity;
@@ -1593,6 +1600,8 @@
                     invoice: row['الفاتورة'] || '',
                     description: row['الصنف'] || '',
                     account: row['المورد'] || '',
+                    qty: quantity,
+                    unit_price: afterDiscount, // السعر بعد الحسم للمشتريات
                     debit: 0, // المشتريات: نحن مدينون (يجب أن ندفع)
                     credit: totalUsdRow, // المشتريات: نحن مدينون (يجب أن ندفع)
                     rawDate: parseDate(date)
@@ -1636,6 +1645,8 @@
                             invoice: '',
                             description: description,
                             account: accountNameForRow,
+                            qty: 1, // للحركات اليومية الكمية دائماً 1
+                            unit_price: usd, // السعر هو المبلغ نفسه
                             debit: 0, // الحساب دائن (دفع لنا)
                             credit: usd, // الحساب دائن (دفع لنا)
                             rawDate: parseDate(date)
@@ -1656,6 +1667,8 @@
                             invoice: '',
                             description: description,
                             account: accountNameForRow,
+                            qty: 1, // للحركات اليومية الكمية دائماً 1
+                            unit_price: usd, // السعر هو المبلغ نفسه
                             debit: usd, // الحساب مدين (دفعنا له)
                             credit: 0, // الحساب مدين (دفعنا له)
                             rawDate: parseDate(date)
@@ -1714,6 +1727,8 @@
                         <td class="font-bold">-</td>
                         <td class="text-right">الرصيد الافتتاحي</td>
                         <td class="text-right font-bold">${accountName}</td>
+                        <td>-</td>
+                        <td>-</td>
                         <td class="${openingBalance >= 0 ? 'debit-cell' : ''}">${openingBalance >= 0 ? openingBalance.toFixed(2) : ''}</td>
                         <td class="${openingBalance < 0 ? 'credit-cell' : ''}">${openingBalance < 0 ? Math.abs(openingBalance).toFixed(2) : ''}</td>
                         <td class="font-bold ${runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
@@ -1735,6 +1750,8 @@
                         <td class="font-bold">${item.invoice}</td>
                         <td class="text-right">${item.description}</td>
                         <td class="text-right font-bold text-blue-700">${item.account}</td>
+                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.qty}</td>
+                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.unit_price.toFixed(2)}</td>
                         <td class="debit-cell">${item.debit > 0 ? item.debit.toFixed(2) : ''}</td>
                         <td class="credit-cell">${item.credit > 0 ? item.credit.toFixed(2) : ''}</td>
                         <td class="font-bold ${runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
@@ -1760,7 +1777,8 @@
                     const totalRow = document.createElement('tr');
                     totalRow.className = 'bg-gray-50 font-bold';
                     totalRow.innerHTML = `
-                        <td colspan="6" class="text-right py-2">الإجمالي</td>
+                        <td colspan="7" class="text-right py-2">الإجمالي</td>
+                        <td class="py-2">-</td>
                         <td class="debit-cell py-2">${totalSales.toFixed(2)}</td>
                         <td class="credit-cell py-2">${totalPurchases.toFixed(2)}</td>
                         <td class="font-bold py-2 ${finalBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
@@ -1783,6 +1801,8 @@
                         <td class="font-bold">${item.invoice}</td>
                         <td class="text-right">${item.description}</td>
                         <td class="text-right font-bold text-blue-700">${item.account}</td>
+                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.qty}</td>
+                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.unit_price.toFixed(2)}</td>
                         <td class="debit-cell">${item.debit > 0 ? item.debit.toFixed(2) : ''}</td>
                         <td class="credit-cell">${item.credit > 0 ? item.credit.toFixed(2) : ''}</td>
                         <td class="text-gray-500 text-sm">-</td>
@@ -1795,7 +1815,7 @@
             if (statementData.length === 0) {
                 const noDataRow = document.createElement('tr');
                 noDataRow.innerHTML = `
-                    <td colspan="9" class="text-center py-4 text-gray-500">
+                    <td colspan="11" class="text-center py-4 text-gray-500">
                         <i class="fas fa-search mr-2"></i> لا توجد حركات تطابق معايير البحث
                     </td>
                 `;
@@ -1849,7 +1869,7 @@
                     const tbody = document.getElementById('statementTableBody');
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="9" class="text-center py-8 text-gray-500">
+                            <td colspan="11" class="text-center py-8 text-gray-500">
                                 <i class="fas fa-info-circle text-2xl mb-2 block"></i>
                                 <p class="font-bold mb-1">مرحباً بك في كشف الحساب</p>
                                 <p class="text-sm">يمكنك البحث باستخدام أي من الخيارات التالية:</p>
