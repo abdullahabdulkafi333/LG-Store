@@ -707,7 +707,10 @@
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allItemsData = res.data;
-                        if (allItemsData.length > 0) allItemsData.pop();
+                        // إزالة الصف الأخير فقط إذا كان فارغاً
+                        allItemsData = allItemsData.filter(row => {
+                            return Object.values(row).some(value => value && value.toString().trim() !== '');
+                        });
                         renderItems();
                         setupItemsDropdowns();
                     }
@@ -721,7 +724,10 @@
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allSalesData = res.data;
-                        if (allSalesData.length > 0) allSalesData.pop();
+                        // إزالة الصفوف الفارغة فقط
+                        allSalesData = allSalesData.filter(row => {
+                            return Object.values(row).some(value => value && value.toString().trim() !== '');
+                        });
                         setupStatementDropdowns(); // إعداد قوائم كشف الحساب
                     }
                 });
@@ -734,7 +740,10 @@
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allPurchasesData = res.data;
-                        if (allPurchasesData.length > 0) allPurchasesData.pop();
+                        // إزالة الصفوف الفارغة فقط
+                        allPurchasesData = allPurchasesData.filter(row => {
+                            return Object.values(row).some(value => value && value.toString().trim() !== '');
+                        });
                     }
                 });
 
@@ -746,7 +755,10 @@
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allJournalData = res.data;
-                        if (allJournalData.length > 0) allJournalData.pop();
+                        // إزالة الصفوف الفارغة فقط
+                        allJournalData = allJournalData.filter(row => {
+                            return Object.values(row).some(value => value && value.toString().trim() !== '');
+                        });
                         renderJournal();
                         setupJournalDropdowns();
                     }
@@ -760,7 +772,10 @@
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allBalancesData = res.data;
-                        if (allBalancesData.length > 0) allBalancesData.pop();
+                        // إزالة الصفوف الفارغة فقط
+                        allBalancesData = allBalancesData.filter(row => {
+                            return Object.values(row).some(value => value && value.toString().trim() !== '');
+                        });
                         renderBalances();
                         setupBalancesDropdowns();
                     }
@@ -774,7 +789,10 @@
                     header: true, skipEmptyLines: true,
                     complete: (res) => {
                         allOpeningBalancesData = res.data;
-                        if (allOpeningBalancesData.length > 0) allOpeningBalancesData.pop();
+                        // إزالة الصفوف الفارغة فقط
+                        allOpeningBalancesData = allOpeningBalancesData.filter(row => {
+                            return Object.values(row).some(value => value && value.toString().trim() !== '');
+                        });
                         
                         // إخفاء الloader بعد تحميل كل البيانات
                         document.getElementById('loader').classList.add('hidden');
@@ -1269,14 +1287,13 @@
             return true;
         }
 
-        // الحصول على الرصيد الافتتاحي للحساب - تم التصحيح
+        // الحصول على الرصيد الافتتاحي للحساب
         function getOpeningBalance(accountName) {
             if (!allOpeningBalancesData || allOpeningBalancesData.length === 0) {
                 return 0;
             }
             
             // البحث في البيانات بناءً على هيكل جدول SHEETS
-            // نحاول البحث بأعمدة مختلفة لأن أسماء الأعمدة قد تختلف
             const account = allOpeningBalancesData.find(row => {
                 // محاولة مطابقة الحساب مع أعمدة مختلفة
                 const account1 = String(row['الحساب'] || '').trim();
@@ -1468,7 +1485,7 @@
             const header = document.getElementById('statementHeader');
             const summary = document.getElementById('statementSummary');
             
-            // إظهار الرأس والملخص فقط (تم حذف حاوية الرصيد الافتتاحي)
+            // إظهار الرأس والملخص فقط
             header.style.display = 'block';
             summary.style.display = 'grid';
             
