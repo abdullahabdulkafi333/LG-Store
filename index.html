@@ -1442,7 +1442,7 @@
                 const buy = parseNumber(row['شراء']);
                 const disc = parseNumber(row['الحسم']);
                 const final = buy - (buy * disc / 100);
-                const plus = final * 1.15;
+                const plus = buy + (buy * 0.15); // التصحيح: شراء + 15%
                 const syp = plus * rate;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -2202,4 +2202,3 @@
     </script>
 </body>
 </html>
-
