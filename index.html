@@ -517,8 +517,8 @@
                             <th data-col="date">التاريخ</th>
                             <th data-col="credit">دائن</th>
                             <th data-col="debit">مدين</th>
-                            <th data-col="usd">دولار</th>
-                            <th data-col="syp">سوري</th>
+                            <th data-col="usd">$</th>
+                            <th data-col="syp">ل.س</th>
                             <th data-col="description">البيان</th>
                         </tr>
                     </thead>
@@ -533,11 +533,11 @@
             <div class="totals-container mb-3 no-print">
                 <div class="grid grid-cols-2 gap-3">
                     <div class="total-card usd-total">
-                        <div class="text-[11px] text-gray-600">إجمالي الدولار</div>
+                        <div class="text-[11px] text-gray-600">إجمالي $</div>
                         <div class="text-sm" id="balancesTotalUsd">0.00 $</div>
                     </div>
                     <div class="total-card syp-total">
-                        <div class="text-[11px] text-gray-600">إجمالي السوري</div>
+                        <div class="text-[11px] text-gray-600">إجمالي ل.س</div>
                         <div class="text-sm" id="balancesTotalSyp">0 ل.س</div>
                     </div>
                 </div>
@@ -549,14 +549,14 @@
                         <tr>
                             <th data-col="index" class="w-12">#</th>
                             <th data-col="account">الحساب</th>
-                            <th data-col="sales_usd">مبيعات دولار</th>
-                            <th data-col="sales_syp">مبيعات سوري</th>
-                            <th data-col="purchases_usd">مشتريات دولار</th>
-                            <th data-col="purchases_syp">مشتريات سوري</th>
-                            <th data-col="debit_usd">الضغوط دولار</th>
-                            <th data-col="debit_syp">الضغوط سوري</th>
-                            <th data-col="balance_usd">الرصيد دولار</th>
-                            <th data-col="balance_syp">الرصيد سوري</th>
+                            <th data-col="sales_usd">مبيعات $</th>
+                            <th data-col="sales_syp">مبيعات ل.س</th>
+                            <th data-col="purchases_usd">مشتريات $</th>
+                            <th data-col="purchases_syp">مشتريات ل.س</th>
+                            <th data-col="debit_usd">المدفوع $</th>
+                            <th data-col="debit_syp">المدفوع ل.س</th>
+                            <th data-col="balance_usd">الرصيد $</th>
+                            <th data-col="balance_syp">الرصيد ل.س</th>
                         </tr>
                     </thead>
                     <tbody id="balancesTableBody"></tbody>
@@ -608,10 +608,14 @@
                             <th data-col="description">البيان</th>
                             <th data-col="account">الحساب</th>
                             <th data-col="qty">الكمية</th>
-                            <th data-col="unit_price">السعر الفردي ($)</th>
-                            <th data-col="debit_usd">مدين (دولار)</th>
-                            <th data-col="credit_usd">دائن (دولار)</th>
-                            <th data-col="balance_usd">الرصيد (دولار)</th>
+                            <th data-col="unit_price_usd">السعر ($)</th>
+                            <th data-col="unit_price_syp">السعر (ل.س)</th>
+                            <th data-col="debit_usd">مدين ($)</th>
+                            <th data-col="credit_usd">دائن ($)</th>
+                            <th data-col="balance_usd">الرصيد ($)</th>
+                            <th data-col="debit_syp">مدين (ل.س)</th>
+                            <th data-col="credit_syp">دائن (ل.س)</th>
+                            <th data-col="balance_syp">الرصيد (ل.س)</th>
                         </tr>
                     </thead>
                     <tbody id="statementTableBody"></tbody>
@@ -663,24 +667,24 @@
         const journalColumns = [
             {id:'index',label:'#'},{id:'date',label:'التاريخ'},
             {id:'credit',label:'دائن'},{id:'debit',label:'مدين'},
-            {id:'usd',label:'دولار'},{id:'syp',label:'سوري'},
+            {id:'usd',label:'$'},{id:'syp',label:'ل.س'},
             {id:'description',label:'البيان'}
         ];
 
         const balancesColumns = [
             {id:'index',label:'#'},
             {id:'account',label:'الحساب'},
-            {id:'sales_usd',label:'مبيعات دولار'},
-            {id:'sales_syp',label:'مبيعات سوري'},
-            {id:'purchases_usd',label:'مشتريات دولار'},
-            {id:'purchases_syp',label:'مشتريات سوري'},
-            {id:'debit_usd',label:'الضغوط دولار'},
-            {id:'debit_syp',label:'الضغوط سوري'},
-            {id:'balance_usd',label:'الرصيد دولار'},
-            {id:'balance_syp',label:'الرصيد سوري'}
+            {id:'sales_usd',label:'مبيعات $'},
+            {id:'sales_syp',label:'مبيعات ل.س'},
+            {id:'purchases_usd',label:'مشتريات $'},
+            {id:'purchases_syp',label:'مشتريات ل.س'},
+            {id:'debit_usd',label:'المدفوع $'},
+            {id:'debit_syp',label:'المدفوع ل.س'},
+            {id:'balance_usd',label:'الرصيد $'},
+            {id:'balance_syp',label:'الرصيد ل.س'}
         ];
 
-        // تحديث تعريف أعمدة كشف الحساب لإضافة الكمية والسعر الفردي
+        // تحديث تعريف أعمدة كشف الحساب ليشمل الأعمدة الجديدة
         const statementColumns = [
             {id:'index',label:'#'},
             {id:'date',label:'التاريخ'},
@@ -689,10 +693,14 @@
             {id:'description',label:'البيان'},
             {id:'account',label:'الحساب'},
             {id:'qty',label:'الكمية'},
-            {id:'unit_price',label:'السعر الفردي ($)'},
-            {id:'debit_usd',label:'مدين (دولار)'},
-            {id:'credit_usd',label:'دائن (دولار)'},
-            {id:'balance_usd',label:'الرصيد (دولار)'}
+            {id:'unit_price_usd',label:'السعر ($)'},
+            {id:'unit_price_syp',label:'السعر (ل.س)'},
+            {id:'debit_usd',label:'مدين ($)'},
+            {id:'credit_usd',label:'دائن ($)'},
+            {id:'balance_usd',label:'الرصيد ($)'},
+            {id:'debit_syp',label:'مدين (ل.س)'},
+            {id:'credit_syp',label:'دائن (ل.س)'},
+            {id:'balance_syp',label:'الرصيد (ل.س)'}
         ];
 
         // تحميل جميع البيانات
@@ -1371,6 +1379,46 @@
             return 0;
         }
 
+        // الحصول على الرصيد الافتتاحي بالليرة السورية
+        function getOpeningBalanceSyp(accountName) {
+            if (!allOpeningBalancesData || allOpeningBalancesData.length === 0) {
+                return 0;
+            }
+            
+            // البحث في البيانات بناءً على هيكل جدول SHEETS
+            const account = allOpeningBalancesData.find(row => {
+                // محاولة مطابقة الحساب مع أعمدة مختلفة
+                const account1 = String(row['الحساب'] || '').trim();
+                const account2 = String(row['Account'] || '').trim();
+                const account3 = String(row['account'] || '').trim();
+                const account4 = String(row['اسم الحساب'] || '').trim();
+                
+                return account1 === accountName || 
+                       account2 === accountName || 
+                       account3 === accountName || 
+                       account4 === accountName;
+            });
+            
+            if (account) {
+                // محاولة الحصول على الرصيد من أعمدة مختلفة
+                const balance1 = parseNumber(account['رصيد افتتاحي سوري']);
+                const balance2 = parseNumber(account['Opening Balance SYP']);
+                const balance3 = parseNumber(account['opening_balance_syp']);
+                const balance4 = parseNumber(account['الرصيد الافتتاحي سوري']);
+                const balance5 = parseNumber(account['الرصيد سوري']);
+                
+                // إرجاع أول قيمة غير صفرية
+                const balances = [balance1, balance2, balance3, balance4, balance5];
+                for (const bal of balances) {
+                    if (bal !== 0) {
+                        return bal;
+                    }
+                }
+            }
+            
+            return 0;
+        }
+
         // عرض بيانات الأصناف
         function renderItems() {
             const tbody = document.getElementById('tableBody');
@@ -1482,8 +1530,8 @@
                 const salesSyp = parseNumber(row['مبيعات سوري']);
                 const purchasesUsd = parseNumber(row['مشتريات دولار']);
                 const purchasesSyp = parseNumber(row['مشتريات سوري']);
-                const debitUsd = parseNumber(row['الضغوط دولار']);
-                const debitSyp = parseNumber(row['الضغوط سوري']);
+                const debitUsd = parseNumber(row['المدفوع دولار']);
+                const debitSyp = parseNumber(row['المدفوع سوري']);
                 const balanceUsd = parseNumber(row['الرصيد دولار']);
                 const balanceSyp = parseNumber(row['الرصيد سوري']);
                 
@@ -1533,10 +1581,25 @@
             // جمع البيانات من جميع المصادر
             const statementData = [];
             
-            let totalSales = 0;
-            let totalPurchases = 0;
-            let totalReceipts = 0; // المقبوضات (الدائن في اليومية - أي دفع لنا)
-            let totalPayments = 0; // المدفوعات (المدين في اليومية - أي دفعنا له)
+            let totalSalesUsd = 0;
+            let totalPurchasesUsd = 0;
+            let totalReceiptsUsd = 0;
+            let totalPaymentsUsd = 0;
+            
+            let totalSalesSyp = 0;
+            let totalPurchasesSyp = 0;
+            let totalReceiptsSyp = 0;
+            let totalPaymentsSyp = 0;
+            
+            // التحقق مما إذا كان هناك بحث في الصنف أو الفاتورة
+            const hasItemSearch = itemFilter && itemFilter.trim() !== '';
+            const hasInvoiceSearch = invoiceFilter && invoiceFilter.trim() !== '';
+            
+            // إضافة صنف يومية إذا لم يكن هناك بحث في الصنف أو الفاتورة
+            const includeJournal = !hasItemSearch && !hasInvoiceSearch;
+            
+            // الحصول على سعر الصرف
+            const exchangeRate = parseFloat(document.getElementById('exchangeRate').value) || 1;
             
             // 1. بيانات المبيعات
             const salesFiltered = allSalesData.filter(row => {
@@ -1552,10 +1615,13 @@
             salesFiltered.forEach(row => {
                 const date = row['التاريخ'] || '';
                 const quantity = parseNumber(row['الكمية']);
-                const price = parseNumber(row['السعر دولار']);
-                const totalUsdRow = price * quantity;
+                const priceUsd = parseNumber(row['السعر دولار']);
+                const priceSyp = parseNumber(row['السعر سوري']);
+                const totalUsdRow = priceUsd * quantity;
+                const totalSypRow = priceSyp * quantity;
                 
-                totalSales += totalUsdRow;
+                totalSalesUsd += totalUsdRow;
+                totalSalesSyp += totalSypRow;
                 
                 statementData.push({
                     date: date,
@@ -1565,10 +1631,14 @@
                     description: row['الصنف'] || '',
                     account: row['العميل'] || '',
                     qty: quantity,
-                    unit_price: price, // سعر الدولار الفردي للمبيعات
-                    debit: totalUsdRow, // المبيعات: العميل مدين (يجب أن يدفع)
-                    credit: 0, // المبيعات: العميل مدين (يجب أن يدفع)
-                    rawDate: parseDate(date)
+                    unit_price_usd: priceUsd,
+                    unit_price_syp: priceSyp,
+                    debit_usd: totalUsdRow,
+                    credit_usd: 0,
+                    debit_syp: totalSypRow,
+                    credit_syp: 0,
+                    rawDate: parseDate(date),
+                    source: 'sales'
                 });
             });
             
@@ -1586,12 +1656,17 @@
             purchasesFiltered.forEach(row => {
                 const date = row['التاريخ'] || '';
                 const quantity = parseNumber(row['الكمية']);
-                const price = parseNumber(row['السعر']);
+                const priceUsd = parseNumber(row['السعر']);
                 const discount = parseNumber(row['الحسم']);
-                const afterDiscount = price - (price * discount / 100);
-                const totalUsdRow = afterDiscount * quantity;
+                const afterDiscountUsd = priceUsd - (priceUsd * discount / 100);
+                const totalUsdRow = afterDiscountUsd * quantity;
                 
-                totalPurchases += totalUsdRow;
+                // حساب السعر بالليرة السورية
+                const priceSyp = afterDiscountUsd * exchangeRate;
+                const totalSypRow = priceSyp * quantity;
+                
+                totalPurchasesUsd += totalUsdRow;
+                totalPurchasesSyp += totalSypRow;
                 
                 statementData.push({
                     date: date,
@@ -1601,81 +1676,98 @@
                     description: row['الصنف'] || '',
                     account: row['المورد'] || '',
                     qty: quantity,
-                    unit_price: afterDiscount, // السعر بعد الحسم للمشتريات
-                    debit: 0, // المشتريات: نحن مدينون (يجب أن ندفع)
-                    credit: totalUsdRow, // المشتريات: نحن مدينون (يجب أن ندفع)
-                    rawDate: parseDate(date)
+                    unit_price_usd: afterDiscountUsd,
+                    unit_price_syp: priceSyp,
+                    debit_usd: 0,
+                    credit_usd: totalUsdRow,
+                    debit_syp: 0,
+                    credit_syp: totalSypRow,
+                    rawDate: parseDate(date),
+                    source: 'purchases'
                 });
             });
             
-            // 3. بيانات اليومية
-            const journalFiltered = allJournalData.filter(row => {
-                const matchesAccount = !accountName || 
-                    String(row['دائن'] || '').trim() === accountName ||
-                    String(row['مدين'] || '').trim() === accountName;
-                const matchesDate = isDateInRange(row['التاريخ'], fromDate, toDate);
-                const matchesType = !typeFilter || typeFilter === '' || typeFilter === 'يومية';
+            // 3. بيانات اليومية (فقط إذا لم يكن هناك بحث في الصنف أو الفاتورة)
+            if (includeJournal) {
+                const journalFiltered = allJournalData.filter(row => {
+                    const matchesAccount = !accountName || 
+                        String(row['دائن'] || '').trim() === accountName ||
+                        String(row['مدين'] || '').trim() === accountName;
+                    const matchesDate = isDateInRange(row['التاريخ'], fromDate, toDate);
+                    const matchesType = !typeFilter || typeFilter === '' || typeFilter === 'يومية';
+                    
+                    return matchesAccount && matchesDate && matchesType;
+                });
                 
-                return matchesAccount && matchesDate && matchesType;
-            });
-            
-            journalFiltered.forEach(row => {
-                const date = row['التاريخ'] || '';
-                const usd = parseNumber(row['دولار']);
-                const creditName = String(row['دائن'] || '').trim();
-                const debitName = String(row['مدين'] || '').trim();
-                const description = row['البيان'] || '';
-                
-                let type = 'يومية';
-                let typeClass = 'type-journal';
-                let accountNameForRow = '';
-                
-                if (creditName === accountName || (!accountName && creditName)) {
-                    // الحساب هو الدائن (أي دفع لنا) أو بحث عام
-                    totalReceipts += usd;
-                    if (typeFilter === 'مقبوضات' || typeFilter === '') {
-                        type = 'مقبوضات';
-                        typeClass = 'type-receipt';
-                        accountNameForRow = creditName;
-                        
-                        statementData.push({
-                            date: date,
-                            type: type,
-                            typeClass: typeClass,
-                            invoice: '',
-                            description: description,
-                            account: accountNameForRow,
-                            qty: 1, // للحركات اليومية الكمية دائماً 1
-                            unit_price: usd, // السعر هو المبلغ نفسه
-                            debit: 0, // الحساب دائن (دفع لنا)
-                            credit: usd, // الحساب دائن (دفع لنا)
-                            rawDate: parseDate(date)
-                        });
+                journalFiltered.forEach(row => {
+                    const date = row['التاريخ'] || '';
+                    const usd = parseNumber(row['دولار']);
+                    const syp = parseNumber(row['سوري']);
+                    const creditName = String(row['دائن'] || '').trim();
+                    const debitName = String(row['مدين'] || '').trim();
+                    const description = row['البيان'] || '';
+                    
+                    let type = 'يومية';
+                    let typeClass = 'type-journal';
+                    let accountNameForRow = '';
+                    
+                    if (creditName === accountName || (!accountName && creditName)) {
+                        // الحساب هو الدائن (أي دفع لنا) أو بحث عام
+                        totalReceiptsUsd += usd;
+                        totalReceiptsSyp += syp;
+                        if (typeFilter === 'مقبوضات' || typeFilter === '' || typeFilter === 'يومية') {
+                            type = 'مقبوضات';
+                            typeClass = 'type-receipt';
+                            accountNameForRow = creditName;
+                            
+                            statementData.push({
+                                date: date,
+                                type: type,
+                                typeClass: typeClass,
+                                invoice: '',
+                                description: description,
+                                account: accountNameForRow,
+                                qty: 1,
+                                unit_price_usd: usd,
+                                unit_price_syp: syp,
+                                debit_usd: 0,
+                                credit_usd: usd,
+                                debit_syp: 0,
+                                credit_syp: syp,
+                                rawDate: parseDate(date),
+                                source: 'journal'
+                            });
+                        }
+                    } else if (debitName === accountName || (!accountName && debitName)) {
+                        // الحساب هو المدين (أي دفعنا له) أو بحث عام
+                        totalPaymentsUsd += usd;
+                        totalPaymentsSyp += syp;
+                        if (typeFilter === 'مدفوعات' || typeFilter === '' || typeFilter === 'يومية') {
+                            type = 'مدفوعات';
+                            typeClass = 'type-payment';
+                            accountNameForRow = debitName;
+                            
+                            statementData.push({
+                                date: date,
+                                type: type,
+                                typeClass: typeClass,
+                                invoice: '',
+                                description: description,
+                                account: accountNameForRow,
+                                qty: 1,
+                                unit_price_usd: usd,
+                                unit_price_syp: syp,
+                                debit_usd: usd,
+                                credit_usd: 0,
+                                debit_syp: syp,
+                                credit_syp: 0,
+                                rawDate: parseDate(date),
+                                source: 'journal'
+                            });
+                        }
                     }
-                } else if (debitName === accountName || (!accountName && debitName)) {
-                    // الحساب هو المدين (أي دفعنا له) أو بحث عام
-                    totalPayments += usd;
-                    if (typeFilter === 'مدفوعات' || typeFilter === '') {
-                        type = 'مدفوعات';
-                        typeClass = 'type-payment';
-                        accountNameForRow = debitName;
-                        
-                        statementData.push({
-                            date: date,
-                            type: type,
-                            typeClass: typeClass,
-                            invoice: '',
-                            description: description,
-                            account: accountNameForRow,
-                            qty: 1, // للحركات اليومية الكمية دائماً 1
-                            unit_price: usd, // السعر هو المبلغ نفسه
-                            debit: usd, // الحساب مدين (دفعنا له)
-                            credit: 0, // الحساب مدين (دفعنا له)
-                            rawDate: parseDate(date)
-                        });
-                    }
-                }
-            });
+                });
+            }
             
             // ترتيب البيانات حسب التاريخ
             statementData.sort((a, b) => a.rawDate - b.rawDate);
@@ -1691,21 +1783,23 @@
                 document.getElementById('statementAccountName').textContent = `كشف حساب: ${accountName}`;
                 
                 // الحصول على الرصيد الافتتاحي فقط إذا كان هناك حساب محدد
-                const openingBalance = getOpeningBalance(accountName);
+                const openingBalanceUsd = getOpeningBalance(accountName);
+                const openingBalanceSyp = getOpeningBalanceSyp(accountName);
                 
                 // حساب الرصيد النهائي - بدءًا من الرصيد الافتتاحي
-                const finalBalance = openingBalance + totalSales - totalPurchases + totalPayments - totalReceipts;
+                const finalBalanceUsd = openingBalanceUsd + totalSalesUsd - totalPurchasesUsd + totalPaymentsUsd - totalReceiptsUsd;
+                const finalBalanceSyp = openingBalanceSyp + totalSalesSyp - totalPurchasesSyp + totalPaymentsSyp - totalReceiptsSyp;
                 
-                // تحديث الملخص
-                document.getElementById('summarySalesTotal').textContent = `${totalSales.toFixed(2)} $`;
-                document.getElementById('summaryPurchasesTotal').textContent = `${totalPurchases.toFixed(2)} $`;
-                document.getElementById('summaryReceiptsTotal').textContent = `${totalReceipts.toFixed(2)} $`;
-                document.getElementById('summaryPaymentsTotal').textContent = `${totalPayments.toFixed(2)} $`;
+                // تحديث الملخص (يبقى بالدولار فقط)
+                document.getElementById('summarySalesTotal').textContent = `${totalSalesUsd.toFixed(2)} $`;
+                document.getElementById('summaryPurchasesTotal').textContent = `${totalPurchasesUsd.toFixed(2)} $`;
+                document.getElementById('summaryReceiptsTotal').textContent = `${totalReceiptsUsd.toFixed(2)} $`;
+                document.getElementById('summaryPaymentsTotal').textContent = `${totalPaymentsUsd.toFixed(2)} $`;
                 
                 const summaryBalanceElement = document.getElementById('summaryCurrentBalance');
-                summaryBalanceElement.textContent = `${finalBalance.toFixed(2)} $`;
+                summaryBalanceElement.textContent = `${finalBalanceUsd.toFixed(2)} $`;
                 
-                if (finalBalance >= 0) {
+                if (finalBalanceUsd >= 0) {
                     summaryBalanceElement.className = 'summary-value summary-positive';
                     summaryBalanceElement.title = 'الحساب مدين (يجب أن يدفع لنا)';
                 } else {
@@ -1714,10 +1808,11 @@
                 }
                 
                 // حساب الرصيد الجاري - بدءًا من الرصيد الافتتاحي
-                let runningBalance = openingBalance;
+                let runningBalanceUsd = openingBalanceUsd;
+                let runningBalanceSyp = openingBalanceSyp;
                 
                 // إضافة سطر الرصيد الافتتاحي في بداية الجدول فقط إذا كان هناك رصيد
-                if (openingBalance !== 0) {
+                if (openingBalanceUsd !== 0 || openingBalanceSyp !== 0) {
                     const openingRow = document.createElement('tr');
                     openingRow.className = 'bg-gray-100 font-bold';
                     openingRow.innerHTML = `
@@ -1728,11 +1823,17 @@
                         <td class="text-right">الرصيد الافتتاحي</td>
                         <td class="text-right font-bold">${accountName}</td>
                         <td>-</td>
-                        <td>-</td>
-                        <td class="${openingBalance >= 0 ? 'debit-cell' : ''}">${openingBalance >= 0 ? openingBalance.toFixed(2) : ''}</td>
-                        <td class="${openingBalance < 0 ? 'credit-cell' : ''}">${openingBalance < 0 ? Math.abs(openingBalance).toFixed(2) : ''}</td>
-                        <td class="font-bold ${runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
-                            ${runningBalance.toFixed(2)}
+                        <td class="${openingBalanceUsd >= 0 ? 'text-green-600' : 'text-red-600'}">${openingBalanceUsd !== 0 ? openingBalanceUsd.toFixed(2) : ''}</td>
+                        <td class="${openingBalanceSyp !== 0 ? 'text-blue-600' : ''}">${openingBalanceSyp !== 0 ? Math.round(openingBalanceSyp).toLocaleString() : ''}</td>
+                        <td class="${openingBalanceUsd >= 0 ? 'debit-cell' : ''}">${openingBalanceUsd >= 0 ? openingBalanceUsd.toFixed(2) : ''}</td>
+                        <td class="${openingBalanceUsd < 0 ? 'credit-cell' : ''}">${openingBalanceUsd < 0 ? Math.abs(openingBalanceUsd).toFixed(2) : ''}</td>
+                        <td class="font-bold ${runningBalanceUsd >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${runningBalanceUsd.toFixed(2)}
+                        </td>
+                        <td class="${openingBalanceSyp >= 0 ? 'debit-cell' : ''}">${openingBalanceSyp >= 0 ? Math.round(openingBalanceSyp).toLocaleString() : ''}</td>
+                        <td class="${openingBalanceSyp < 0 ? 'credit-cell' : ''}">${openingBalanceSyp < 0 ? Math.round(Math.abs(openingBalanceSyp)).toLocaleString() : ''}</td>
+                        <td class="font-bold ${runningBalanceSyp >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${Math.round(runningBalanceSyp).toLocaleString()}
                         </td>
                     `;
                     tbody.appendChild(openingRow);
@@ -1740,7 +1841,8 @@
                 
                 statementData.forEach((item, i) => {
                     // تحديث الرصيد الجاري
-                    runningBalance += item.debit - item.credit;
+                    runningBalanceUsd += item.debit_usd - item.credit_usd;
+                    runningBalanceSyp += item.debit_syp - item.credit_syp;
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -1751,11 +1853,17 @@
                         <td class="text-right">${item.description}</td>
                         <td class="text-right font-bold text-blue-700">${item.account}</td>
                         <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.qty}</td>
-                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.unit_price.toFixed(2)}</td>
-                        <td class="debit-cell">${item.debit > 0 ? item.debit.toFixed(2) : ''}</td>
-                        <td class="credit-cell">${item.credit > 0 ? item.credit.toFixed(2) : ''}</td>
-                        <td class="font-bold ${runningBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
-                            ${runningBalance.toFixed(2)}
+                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.unit_price_usd.toFixed(2)}</td>
+                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : Math.round(item.unit_price_syp).toLocaleString()}</td>
+                        <td class="debit-cell">${item.debit_usd > 0 ? item.debit_usd.toFixed(2) : ''}</td>
+                        <td class="credit-cell">${item.credit_usd > 0 ? item.credit_usd.toFixed(2) : ''}</td>
+                        <td class="font-bold ${runningBalanceUsd >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${runningBalanceUsd.toFixed(2)}
+                        </td>
+                        <td class="debit-cell">${item.debit_syp > 0 ? Math.round(item.debit_syp).toLocaleString() : ''}</td>
+                        <td class="credit-cell">${item.credit_syp > 0 ? Math.round(item.credit_syp).toLocaleString() : ''}</td>
+                        <td class="font-bold ${runningBalanceSyp >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${Math.round(runningBalanceSyp).toLocaleString()}
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -1766,23 +1874,29 @@
                     const firstDate = statementData[0].date;
                     const lastDate = statementData[statementData.length - 1].date;
                     document.getElementById('statementPeriod').textContent = `الفترة: ${firstDate} إلى ${lastDate}`;
-                } else if (openingBalance !== 0) {
+                } else if (openingBalanceUsd !== 0 || openingBalanceSyp !== 0) {
                     document.getElementById('statementPeriod').textContent = 'لا توجد حركات - رصيد افتتاحي فقط';
                 } else {
                     document.getElementById('statementPeriod').textContent = 'لا توجد حركات للحساب';
                 }
                 
                 // إضافة سطر الإجمالي
-                if (statementData.length > 0 || openingBalance !== 0) {
+                if (statementData.length > 0 || openingBalanceUsd !== 0 || openingBalanceSyp !== 0) {
                     const totalRow = document.createElement('tr');
                     totalRow.className = 'bg-gray-50 font-bold';
                     totalRow.innerHTML = `
                         <td colspan="7" class="text-right py-2">الإجمالي</td>
                         <td class="py-2">-</td>
-                        <td class="debit-cell py-2">${totalSales.toFixed(2)}</td>
-                        <td class="credit-cell py-2">${totalPurchases.toFixed(2)}</td>
-                        <td class="font-bold py-2 ${finalBalance >= 0 ? 'text-green-600' : 'text-red-600'}">
-                            ${finalBalance.toFixed(2)}
+                        <td class="py-2">-</td>
+                        <td class="debit-cell py-2">${totalSalesUsd.toFixed(2)}</td>
+                        <td class="credit-cell py-2">${totalPurchasesUsd.toFixed(2)}</td>
+                        <td class="font-bold py-2 ${finalBalanceUsd >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${finalBalanceUsd.toFixed(2)}
+                        </td>
+                        <td class="debit-cell py-2">${Math.round(totalSalesSyp).toLocaleString()}</td>
+                        <td class="credit-cell py-2">${Math.round(totalPurchasesSyp).toLocaleString()}</td>
+                        <td class="font-bold py-2 ${finalBalanceSyp >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${Math.round(finalBalanceSyp).toLocaleString()}
                         </td>
                     `;
                     tbody.appendChild(totalRow);
@@ -1802,9 +1916,13 @@
                         <td class="text-right">${item.description}</td>
                         <td class="text-right font-bold text-blue-700">${item.account}</td>
                         <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.qty}</td>
-                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.unit_price.toFixed(2)}</td>
-                        <td class="debit-cell">${item.debit > 0 ? item.debit.toFixed(2) : ''}</td>
-                        <td class="credit-cell">${item.credit > 0 ? item.credit.toFixed(2) : ''}</td>
+                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : item.unit_price_usd.toFixed(2)}</td>
+                        <td class="text-center">${item.type === 'مقبوضات' || item.type === 'مدفوعات' ? '-' : Math.round(item.unit_price_syp).toLocaleString()}</td>
+                        <td class="debit-cell">${item.debit_usd > 0 ? item.debit_usd.toFixed(2) : ''}</td>
+                        <td class="credit-cell">${item.credit_usd > 0 ? item.credit_usd.toFixed(2) : ''}</td>
+                        <td class="text-gray-500 text-sm">-</td>
+                        <td class="debit-cell">${item.debit_syp > 0 ? Math.round(item.debit_syp).toLocaleString() : ''}</td>
+                        <td class="credit-cell">${item.credit_syp > 0 ? Math.round(item.credit_syp).toLocaleString() : ''}</td>
                         <td class="text-gray-500 text-sm">-</td>
                     `;
                     tbody.appendChild(tr);
@@ -1815,7 +1933,7 @@
             if (statementData.length === 0) {
                 const noDataRow = document.createElement('tr');
                 noDataRow.innerHTML = `
-                    <td colspan="11" class="text-center py-4 text-gray-500">
+                    <td colspan="15" class="text-center py-4 text-gray-500">
                         <i class="fas fa-search mr-2"></i> لا توجد حركات تطابق معايير البحث
                     </td>
                 `;
@@ -1869,7 +1987,7 @@
                     const tbody = document.getElementById('statementTableBody');
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="11" class="text-center py-8 text-gray-500">
+                            <td colspan="15" class="text-center py-8 text-gray-500">
                                 <i class="fas fa-info-circle text-2xl mb-2 block"></i>
                                 <p class="font-bold mb-1">مرحباً بك في كشف الحساب</p>
                                 <p class="text-sm">يمكنك البحث باستخدام أي من الخيارات التالية:</p>
@@ -2063,6 +2181,7 @@
         
         document.getElementById('exchangeRate').addEventListener('input', () => {
             if (currentTab === 'items') renderItems();
+            if (currentTab === 'statement') renderStatement();
         });
 
         // التحميل الأولي
@@ -2083,3 +2202,4 @@
     </script>
 </body>
 </html>
+
