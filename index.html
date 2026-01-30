@@ -1564,7 +1564,7 @@
             document.getElementById('balancesTotalSyp').textContent = `${Math.round(totalSyp).toLocaleString()} ل.س`;
         }
 
-        // عرض كشف الحساب
+        // عرض كشف الحساب - الإصدار المصحح
         function renderStatement() {
             const accountName = document.getElementById('searchStatementAccount').value.trim();
             const tbody = document.getElementById('statementTableBody');
@@ -1598,10 +1598,7 @@
             // إضافة صنف يومية إذا لم يكن هناك بحث في الصنف أو الفاتورة
             const includeJournal = !hasItemSearch && !hasInvoiceSearch;
             
-            // الحصول على سعر الصرف
-            const exchangeRate = parseFloat(document.getElementById('exchangeRate').value) || 1;
-            
-            // 1. بيانات المبيعات
+            // 1. بيانات المبيعات - لديها سعر بالدولار وسعر بالليرة السورية
             const salesFiltered = allSalesData.filter(row => {
                 const matchesAccount = !accountName || String(row['العميل'] || '').trim() === accountName;
                 const matchesDate = isDateInRange(row['التاريخ'], fromDate, toDate);
@@ -1615,8 +1612,11 @@
             salesFiltered.forEach(row => {
                 const date = row['التاريخ'] || '';
                 const quantity = parseNumber(row['الكمية']);
+                
+                // سعر المبيعات: يوجد كلا العمودين
                 const priceUsd = parseNumber(row['السعر دولار']);
                 const priceSyp = parseNumber(row['السعر سوري']);
+                
                 const totalUsdRow = priceUsd * quantity;
                 const totalSypRow = priceSyp * quantity;
                 
@@ -1642,7 +1642,7 @@
                 });
             });
             
-            // 2. بيانات المشتريات
+            // 2. بيانات المشتريات - لديها سعر بالدولار فقط، والسعر بالليرة السورية = 0
             const purchasesFiltered = allPurchasesData.filter(row => {
                 const matchesAccount = !accountName || String(row['المورد'] || '').trim() === accountName;
                 const matchesDate = isDateInRange(row['التاريخ'], fromDate, toDate);
@@ -1656,14 +1656,16 @@
             purchasesFiltered.forEach(row => {
                 const date = row['التاريخ'] || '';
                 const quantity = parseNumber(row['الكمية']);
+                
+                // سعر المشتريات: يوجد سعر بالدولار فقط
                 const priceUsd = parseNumber(row['السعر']);
                 const discount = parseNumber(row['الحسم']);
                 const afterDiscountUsd = priceUsd - (priceUsd * discount / 100);
                 const totalUsdRow = afterDiscountUsd * quantity;
                 
-                // حساب السعر بالليرة السورية
-                const priceSyp = afterDiscountUsd * exchangeRate;
-                const totalSypRow = priceSyp * quantity;
+                // السعر بالليرة السورية = 0 (كما تريد)
+                const priceSyp = 0;
+                const totalSypRow = 0;
                 
                 totalPurchasesUsd += totalUsdRow;
                 totalPurchasesSyp += totalSypRow;
