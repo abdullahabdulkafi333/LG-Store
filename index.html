@@ -2197,8 +2197,8 @@
             document.getElementById('searchStatementDateTo').value = today;
             
             // تعيين تاريخ قبل شهر من اليوم
-            const lastMonth = new Date();
-            lastMonth.setMonth(lastMonth.getMonth() - 1);
+            const lastyear = new Date();
+            lastyear.setyear(lastyear.getyear() - 1);
             document.getElementById('searchStatementDateFrom').value = lastMonth.toISOString().split('T')[0];
         };
     </script>
